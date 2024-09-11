@@ -4,56 +4,40 @@ from drv_modbus import request
 from pymodbus.client import ModbusTcpClient
 import time
 
+# 初始化 Modbus TCP 連接
 c = ModbusTcpClient(host="192.168.1.1", port=502, unit_id=2)
 c.connect()
-x , y , z , rx, ry, rz = request.Get_TCP_Pose(c)
 
+# 讀取當前的手臂位姿
+x, y, z, rx, ry, rz = request.Get_TCP_Pose(c)
+
+# 定義鍵盤按下事件
 def on_press(key):
     try:
         print(request.Get_TCP_Pose(c))
-        if key == keyboard.Key.up:#-x
-            send.Jog_Position(c, -1 , 0 , 0 , 0, 0, 0)
-        if key == keyboard.Key.down:#+x
-            send.Jog_Position(c, 1 , 0 , 0 , 0, 0, 0)
-        if key == keyboard.Key.left:#-y
-            send.Jog_Position(c, 0 , -1 , 0 , 0, 0, 0)
-        if key == keyboard.Key.right:#+y
-            send.Jog_Position(c, 0 , 1 , 0 , 0, 0, 0)
-        if key == keyboard.Key.ctrl_l:#-z
-            send.Jog_Position(c, 0 , 0 , -1 , 0, 0, 0)
-        if key == keyboard.Key.shift_l:#+z
-            send.Jog_Position(c, 0 , 0 , 1 , 0, 0, 0)
-        
-    except AttributeError:
-        print('special key {0} pressed'.format(key))
+        if key == keyboard.Key.up:  # 按上箭頭，向-x方向移動
+            send.Jog_Position(c, -1, 0, 0, 0, 0, 0)
+        if key == keyboard.Key.down:  # 按下箭頭，向+x方向移動
+            send.Jog_Position(c, 1, 0, 0, 0, 0, 0)
+        if key == keyboard.Key.left:  # 按左箭頭，向-y方向移動
+            send.Jog_Position(c, 0, -1, 0, 0, 0, 0)
+        if key == keyboard.Key.right:  # 按右箭頭，向+y方向移動
+            send.Jog_Position(c, 0, 1, 0, 0, 0, 0)
+        if key == keyboard.Key.ctrl_l:  # 按Ctrl，向-z方向移動
+            send.Jog_Position(c, 0, 0, -1, 0, 0, 0)
+        if key == keyboard.Key.shift_l:  # 按Shift，向+z方向移動
+            send.Jog_Position(c, 0, 0, 1, 0, 0, 0)
 
+    except AttributeError:
+        print(f"特殊按鍵 {key} 被按下")
+
+# 定義鍵盤釋放事件
 def on_release(key):
-    #print('{0} released'.format(key))
-    if key == keyboard.Key.up:#-x
+    if key in [keyboard.Key.up, keyboard.Key.down, keyboard.Key.left, keyboard.Key.right, keyboard.Key.ctrl_l, keyboard.Key.shift_l]:
         send.Jog_Stop(c)
-    if key == keyboard.Key.down:#+x
-        send.Jog_Stop(c)
-    if key == keyboard.Key.left:#-y
-        send.Jog_Stop(c)
-    if key == keyboard.Key.right:#+y
-        send.Jog_Stop(c)
-    if key == keyboard.Key.ctrl_l:#-z
-        send.Jog_Stop(c)
-    if key == keyboard.Key.shift_l:#+z
-        send.Jog_Stop(c)
-    if key == keyboard.Key.esc:
-        # Stop listener
+    if key == keyboard.Key.esc:  # 按下 ESC 鍵退出
         return False
 
-# Collect events until released
-with keyboard.Listener(
-        on_press=on_press,
-        on_release=on_release) as listener:
+# 啟動鍵盤監聽器，持續監聽鍵盤事件
+with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
     listener.join()
-
-# ...or, in a non-blocking fashion:
-listener = keyboard.Listener(
-    on_press=on_press,
-    on_release=on_release)
-listener.start()
-
