@@ -51,11 +51,7 @@ DRV-Modbus/
 
 1.  確保已安裝 Python 3 及 `pip`，然後安裝所需依賴庫：
     
-    bash
-    
-     複製程式碼
-    
-    `pip install -r requirements.txt` 
+`pip install -r requirements.txt` 
     
 2.  確保你的環境支持 Modbus TCP 通訊並連接到台達機械手臂。
     
@@ -67,19 +63,11 @@ DRV-Modbus/
 
 此範例展示了如何連接到台達 DRV 機械手臂並讀取其 TCP 位姿。
 
-bash
-
- 複製程式碼
-
 `python drv_modbus_example.py` 
 
 ### 2\. 使用鍵盤控制機械手臂
 
 運行 `keyboard_jog_example.py`，可以透過鍵盤方向鍵來控制機械手臂的移動：
-
-bash
-
- 複製程式碼
 
 `python keyboard_jog_example.py` 
 
@@ -87,29 +75,17 @@ bash
 
 運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
 
-bash
-
- 複製程式碼
-
 `python aruco_spawn_example.py` 
 
 ### 4\. 檢測 ArUco 標記
 
 運行 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記並顯示其位置：
 
-bash
-
- 複製程式碼
-
 `python find_aruco_example.py` 
 
 ### 5\. 控制吸盤
 
 運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
-
-bash
-
- 複製程式碼
 
 `python warp_suction_example.py` 
 
