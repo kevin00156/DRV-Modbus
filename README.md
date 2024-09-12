@@ -31,7 +31,7 @@ DRV-Modbus/
 
 透過 Modbus 協議控制台達 DRV 機械手臂的運動。
 
--   **TCP 位姿讀取**: 讀取機械手臂末端執行器的位姿。
+-   **TCP 姿態讀取**: 讀取機械手臂末端執行器的Pose。
 -   **移動控制**: 透過 `Go_Position` 函數實現機械手臂的精確移動。
 -   **吸盤控制**: 控制吸盤的啟動與停止。
 
@@ -50,8 +50,12 @@ DRV-Modbus/
 ----
 
 1.  確保已安裝 Python 3 及 `pip`，然後安裝所需依賴庫：
-    
-`pip install -r requirements.txt` 
+
+
+```
+cd path/to/your/project/DRV-Modbus #請記得改成你專案的位置，或乾脆在你專案內開啟powershell
+pip install -r requirements.txt #只要執行這個 就可以自動安裝所有所需依賴庫
+``` 
     
 2.  確保你的環境支持 Modbus TCP 通訊並連接到台達機械手臂。
     
@@ -71,6 +75,9 @@ DRV-Modbus/
 
 `python keyboard_jog_example.py` 
 
+---
+:::warning 
+以下仍未測試 
 ### 3\. 生成 ArUco 標記
 
 運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
@@ -82,13 +89,28 @@ DRV-Modbus/
 運行 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記並顯示其位置：
 
 `python find_aruco_example.py` 
-
+:::
 ### 5\. 控制吸盤
 
 運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
 
 `python warp_suction_example.py` 
 
+如果吸盤並不裝在DO_0，請嘗試更改發送的命令為你的DO
+
+詳細方法請根據二進制決定發送的值，如DO_10，則請將輸入改為$10^{10}=1024$，如
+```
+def Suction_ON(c):
+    """
+    打開吸盤
+
+    參數:
+        c: Modbus TCP 客戶端
+    """
+    c.write_register(0x02FE, 1024, 2)#改這行的第二個arg
+    
+#Suction_OFF同理，或可以新增自己的函式
+```
 貢獻
 --
 
