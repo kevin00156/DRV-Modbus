@@ -54,8 +54,7 @@ DRV-Modbus/
 
 ```
 cd path/to/your/project/DRV-Modbus #請記得改成你專案的位置，或乾脆在你專案內開啟powershell
-pip install -r requirements.txt
-
+pip install -r requirements.txt #只要執行這個 就可以自動安裝所有所需依賴庫
 ``` 
     
 2.  確保你的環境支持 Modbus TCP 通訊並連接到台達機械手臂。
