@@ -1,0 +1,5 @@
+pymodbus==3.0.2         # 用於 Modbus 通訊
+opencv-python==4.5.3.56 # 用於影像處理與顯示 (cv2)
+numpy==1.21.0           # 用於數據處理和矩陣運算
+matplotlib==3.4.2       # 用於繪圖 (3D 繪製)
+pynput==1.7.3           # 用於監聽鍵盤事件

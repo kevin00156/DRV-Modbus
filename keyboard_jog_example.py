@@ -5,9 +5,14 @@ from pymodbus.client import ModbusTcpClient
 import time
 
 # 初始化 Modbus TCP 連接
-c = ModbusTcpClient(host="192.168.1.1", port=502, unit_id=2)
-c.connect()
-
+host = "192.168.1.1"
+port = 502
+c = ModbusTcpClient(host=host, port=port)
+if not c.connect():
+    print(f"cannot connect to {host}:{port}")
+    exit(1)
+else:
+    print(f"Connected to {host}:{port}")
 # 讀取當前的手臂位姿
 x, y, z, rx, ry, rz = request.Get_TCP_Pose(c)
 
@@ -27,9 +32,8 @@ def on_press(key):
             send.Jog_Position(c, 0, 0, -1, 0, 0, 0)
         if key == keyboard.Key.shift_l:  # 按Shift，向+z方向移動
             send.Jog_Position(c, 0, 0, 1, 0, 0, 0)
-
     except AttributeError:
-        print(f"特殊按鍵 {key} 被按下")
+        print(f"undefinded {key} has been pressed")
 
 # 定義鍵盤釋放事件
 def on_release(key):
