@@ -65,7 +65,7 @@ pip install -r requirements.txt #只要執行這個 就可以自動安裝所有�
 
 ### 1\. 運行 `drv_modbus_example.py`
 
-此範例展示了如何連接到台達 DRV 機械手臂並讀取其 TCP 位姿。
+此範例展示了如何連接到台達 DRV 機械手臂並讀取其 TCP Pose，並可根據使用者需要，在讀取Pose前先發送「移動到特定Pose」的命令。
 
 `python drv_modbus_example.py` 
 
@@ -74,7 +74,12 @@ pip install -r requirements.txt #只要執行這個 就可以自動安裝所有�
 運行 `keyboard_jog_example.py`，可以透過鍵盤方向鍵來控制機械手臂的移動：
 
 `python keyboard_jog_example.py` 
-
+按上箭頭，向-x方向移動
+按下箭頭，向+x方向移動
+按左箭頭，向-y方向移動
+按右箭頭，向+y方向移動
+按L_Shift，向-z方向移動
+按L_Ctrl，向+z方向移動
 ---
 
 **以下仍未測試**
