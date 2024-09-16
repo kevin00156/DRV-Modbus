@@ -59,11 +59,11 @@ pip install -r requirements.txt #只要執行這個 就可以自動安裝所有�
 
 ``` 
 
-另外提供了作者本人的vscode環境，以便初學者使用
+另外提供了作者本人的vscode中的所有extension，以便初學者使用
 
 ```
 
-Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_ } #只要執行這個，就會把你的vscode環境變得跟作者一樣，謹慎操作
+Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_ } #只要執行這個，安裝一大堆extension，謹慎操作
 
 ```
 
