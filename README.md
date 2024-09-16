@@ -76,20 +76,21 @@ pip install -r requirements.txt #只要執行這個 就可以自動安裝所有�
 `python keyboard_jog_example.py` 
 
 ---
-:::warning 
-以下仍未測試 
-### 3\. 生成 ArUco 標記
 
-運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
+**以下仍未測試**
+    ### 3\. 生成 ArUco 標記
+    
+    運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
+    
+    `python aruco_spawn_example.py` 
+    
+    ### 4\. 檢測 ArUco 標記
+    
+    運行 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記並顯示其位置：
+    
+    `python find_aruco_example.py` 
 
-`python aruco_spawn_example.py` 
 
-### 4\. 檢測 ArUco 標記
-
-運行 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記並顯示其位置：
-
-`python find_aruco_example.py` 
-:::
 ### 5\. 控制吸盤
 
 運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
