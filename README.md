@@ -6,6 +6,7 @@ DRV Modbus
 --
 
 DRV Modbus 是一個基於 `pymodbus` 的 Python 庫，用於控制台達 DRV 系列機械手臂。此庫提供了一系列功能，包括讀取機械手臂的 TCP 位姿、執行移動命令、控制吸盤以及透過 ArUco 標記進行機械手臂校正。
+
 **注意：由於使用pyrealsense2庫，因此請使用Python 3.11版避免版本衝突**
 
 目錄結構
@@ -86,11 +87,17 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 運行 `keyboard_jog_example.py`，可以透過鍵盤方向鍵來控制機械手臂的移動：
 
 `python keyboard_jog_example.py` 
+
 按上箭頭，向-x方向移動
+
 按下箭頭，向+x方向移動
+
 按左箭頭，向-y方向移動
+
 按右箭頭，向+y方向移動
+
 按L_Shift，向-z方向移動
+
 按L_Ctrl，向+z方向移動
 
 ---
