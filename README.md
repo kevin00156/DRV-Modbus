@@ -80,6 +80,7 @@ pip install -r requirements.txt #只要執行這個 就可以自動安裝所有�
 按右箭頭，向+y方向移動
 按L_Shift，向-z方向移動
 按L_Ctrl，向+z方向移動
+
 ---
 
 **以下仍未測試**
