@@ -59,23 +59,25 @@ pip install -r requirements.txt #只要執行這個 就可以自動安裝所有�
 
 ``` 
 
-另外提供了作者本人的vscode環境，以便初學者使用
+另外提供了作者本人的vscode extensions，以便初學者使用
 
 ```
 
-Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_ } #只要執行這個，就會把你的vscode環境變得跟作者一樣，謹慎操作
+Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_ } #只要執行這個，就會安裝一堆你可能不會用到的extension，謹慎操作
 
 ```
 
-2.  確保你的環境支持 Modbus TCP 通訊並連接到台達機械手臂。
+2.  確定你正確連接了台達機器手臂，並且能夠ping到，且台達機器手臂的ModbusTCP設定頁面正確
     
 
 使用方法
 ----
 
-### 1\. 運行 `drv_modbus_example.py`
+### 1\. 執行 `drv_modbus_example.py`
 
 此範例展示了如何連接到台達 DRV 機械手臂並讀取其 TCP Pose，並可根據使用者需要，在讀取Pose前先發送「移動到特定Pose」的命令。
+
+**注意：如果連這個都無法正確執行，就表示環境設定錯誤，或根本沒有連線到，請把網路線插好，ping到後再檢查是否為環境設定問題**
 
 `python drv_modbus_example.py` 
 
@@ -103,7 +105,7 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
     
     ### 4\. 檢測 ArUco 標記
     
-    運行 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記並顯示其位置：
+    運行 `find_aruco_example.py` 檢測攝影機中的 ArUco 標記並顯示其位置：
     
     `python find_aruco_example.py` 
 
