@@ -184,7 +184,7 @@ K = realsense.Get_Color_K()
 D = np.array([0.0,0.0,0.0,0.0,0.0,])
 
 # 初始化 Modbus TCP 連接，用於控制機械手臂
-c = ModbusTcpClient(host="192.168.1.1", port=502, unit_id=2)
+c = ModbusTcpClient(host="192.168.1.1", port=502)
 c.connect()
 
 # 定義機械手臂的 home 點與放置點的位姿
