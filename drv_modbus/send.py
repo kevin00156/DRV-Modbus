@@ -1,9 +1,10 @@
 from pymodbus.payload import BinaryPayloadBuilder
 from pymodbus.constants import Endian
 from drv_modbus import request
-
+from pymodbus.client import ModbusTcpClient
 MovP = 0
 MovL = 1
+
 def Go_Position(c, *args, speed=20, mov=0, block=True):
     """
     讓機械手臂移動到指定的位置 (X, Y, Z, Rx, Ry, Rz)
@@ -55,9 +56,7 @@ def Go_Position(c, *args, speed=20, mov=0, block=True):
     if block == False:
         return
 
-    pos_flag = 2
-    while pos_flag != 1:
-        pos_flag = request.Get_Pose_Flag(c)
+    request.waitRobotReachTargetPosition(c)#等待robot運動完成
     print("Move done!")
 
 
@@ -67,9 +66,12 @@ def Suction_ON(c):
 
     參數:
         c: Modbus TCP 客戶端
+
+    對指定地址寫入"1"，以啟用DO_1。
+    注意：要更改輸出的DO目標，請根據二進制處理
     """
     c.write_register(0x02FE, 1, 2)
-
+    #c.write_register(0x02FE, int(0b0000000000000001), 2) #如果需要使用二進制寫值 可以使用這行
 def Suction_OFF(c):
     """
     關閉吸盤
@@ -77,7 +79,8 @@ def Suction_OFF(c):
     參數:
         c: Modbus TCP 客戶端
     """
-    c.write_register(0x02FE, 0, 2)
+    c.write_register(0x02FE, 0, 2)#將所有Output設為0
+    #附註：如果你只想對某個output設為0，可以先讀取當前output的值，再將當前output的某個bit反轉，再傳送，就可以達到要求功能
 
 def Jog_Position(c, *args):
     """
@@ -146,3 +149,19 @@ def Jog_Stop(c):
         c: Modbus TCP 客戶端
     """
     c.write_registers(0x0300, 0, 2)
+
+def Motion_Stop(c,block = False):
+    """
+    停止所有運動(測試中)
+
+    參數:
+        c: Modbus TCP 客戶端
+
+    利用0x0300地址的function code 1000 來停止運動功能，並根據需求堵塞流程，直到確定手臂已停下
+    """
+    c.write_registers(0x0300, 1000, 2)
+    if block==False :#若不須堵塞，則直接Return
+        return
+    
+    request.waitRobotReachTargetPosition(c)#等待robot運動完成
+    

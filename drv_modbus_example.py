@@ -9,6 +9,8 @@ if __name__ == "__main__":
     host = "192.168.1.1"
     port = 502
     c = ModbusTcpClient(host=host, port=port)
+
+    
     if not c.connect():
         print(f"cannot connect to {host}:{port}")
         exit(1)
@@ -28,7 +30,7 @@ if __name__ == "__main__":
 
         print(f"x: {x}, y: {y}, z: {z}, rx: {rx}, ry: {ry}, rz: {rz}")
 
-        if x==home[0] and y==home[1] and z==home[2] and rx==home[3] and ry==home[4] and rz==home[5]:
+        if request.isRobotReachTargetPosition(c):#檢查位置是否到達
             print ("position arrived!")
             break
         # 每隔0.2秒打印一次手臂位置
