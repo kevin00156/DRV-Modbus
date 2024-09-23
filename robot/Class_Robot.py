@@ -2,7 +2,7 @@ from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
 from pymodbus.client import ModbusTcpClient
 import time
-from enumRobotCommand import eRobotCommand 
+from robot.enumRobotCommand import eRobotCommand 
 # 自訂例外
 class RequestErrorExpection(Exception):
     def __init__(self, message=f"Request error.", error_code=1):
@@ -31,7 +31,6 @@ class Robot:
         self.__blockTime = motionBlockTime                                      #定義在block的時候要等多久
         self.__suction_DO_Number = suction_DO_Number                            #定義吸盤的位置(預設在DO_0)
         
-        self.isRobotReachTargetPosition = False                                 #確定Robot是否在定位的屬性
 
     def __del__(self):
         """
@@ -115,7 +114,7 @@ class Robot:
         # 檢查 robotCommand 是否是 301~307 (動作命令)
         if robotCommand not in (eRobotCommand.Robot_Go_MovP, eRobotCommand.Robot_Go_MovL, 
                                 eRobotCommand.Robot_Go_MultiMoveJ, eRobotCommand.Robot_Go_MArchP, 
-                                eRobotCommand.Robot_Go_MArchL):
+                                eRobotCommand.Robot_Go_MArchL, eRobotCommand.Robot_All_Joints_Homing_To_Origin):
             # 如果 robotCommand 不是 301~307，且 args 為 None，則拋出例外
             if x is None:
                 raise AssertionError("動作命令不正確且未提供座標")
