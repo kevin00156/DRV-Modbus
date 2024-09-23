@@ -2,7 +2,7 @@ import cv2
 from landmark import aruco
 
 # 設定 ArUco 標記的 ID 和解析度
-id = 4
+id = 5
 resolution = 200
 
 # 創建一個 5x5 大小、ID 為4的 ArUco 標記

@@ -100,30 +100,32 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 
 按L_Ctrl，向+z方向移動
 
----
+
+### 3\. 生成 ArUco 標記
+
+運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
+
+`python aruco_spawn_example.py` 
+
+### 4\. 檢測 ArUco 標記
+
+運行 `find_aruco_example.py` 檢測realsense攝影機中的 ArUco 標記  
+並以ArUco位置建立相機坐標系  
+
+`python find_aruco_example.py` 
+
 
 **以下仍未測試**
+    ### 5\. 控制吸盤
 
-    ### 3\. 生成 ArUco 標記
+    運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
+
+    `python warp_suction_example.py` 
     
-    運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
-    
-    `python aruco_spawn_example.py` 
-    
-    ### 4\. 檢測 ArUco 標記
-    
-    運行 `find_aruco_example.py` 檢測攝影機中的 ArUco 標記並顯示其位置：
-    
-    `python find_aruco_example.py` 
+    這個功能比較複雜，是檢測aruco位置後，還要命令機械手臂移動並控制吸盤的程式  
+    目前仍在研究中  
 
-
-### 5\. 控制吸盤
-
-運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
-
-`python warp_suction_example.py` 
-
-如果吸盤並不裝在DO_0，請嘗試更改發送的命令為你的DO
+    如果吸盤並不裝在DO_0，請嘗試更改發送的命令為你的DO
 
 詳細方法請根據二進制決定發送的值，如DO_10，則請將輸入改為$`10^{10}=1024`$，如
 ```
@@ -136,7 +138,7 @@ def Suction_ON(c):
     """
     c.write_register(0x02FE, 1024, 2)#改這行的第二個arg
     
-#Suction_OFF同理，或可以新增自己的函式
+#Suction_OFF同理，或可以新增自己的函式，或可以寫為int(0b0000010000000000)
 ```
 貢獻
 --
