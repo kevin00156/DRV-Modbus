@@ -4,9 +4,14 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-aruco_5x5_100_id_24 = aruco.Aruco(aruco.ARUCO_DICT().DICT_5X5_100, 1, 300)
+'''
+這是用以啟動realsense，尋找畫面中指定號碼的aruco 並由aruco座標建立相機坐標系
+'''
 
-cap = cv2.VideoCapture(1)
+
+aruco_5x5_100_id_24 = aruco.Aruco(aruco.ARUCO_DICT().DICT_6X6_50, 2, 300)#這行請根據需要改用對應的aruco標記集
+
+cap = cv2.VideoCapture(0)#請根據需要更改相機號碼，參照find_cameras.py
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 aruco_length = 0.08

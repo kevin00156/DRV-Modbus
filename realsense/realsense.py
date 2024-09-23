@@ -10,6 +10,11 @@ config = rs.config()
 # 開始管線，啟動相機的數據流
 pipeline.start(config)
 
+# 在 pipeline 啟動後，設置相機的曝光參數
+color_sensor = pipeline.get_active_profile().get_device().query_sensors()[1]  # 獲取彩色影像傳感器
+#color_sensor.set_option(rs.option.enable_auto_exposure, 1)  # 禁用自動曝光
+#color_sensor.set_option(rs.option.exposure, 100)  # 設置手動曝光值，根據需求調整曝光值
+
 # 創建點雲物件，用於計算和處理點雲數據
 pc = rs.pointcloud()
 

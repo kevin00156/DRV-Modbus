@@ -36,14 +36,14 @@ class ARUCO_DICT():
 class Aruco():
     def __init__(self, aruco_dict, id, resolution = 300, aruco_params = None):
         # 使用 OpenCV 的方法來選擇指定的 ArUco 字典
-        self.aruco_dict = cv2.aruco.Dictionary_get(aruco_dict)
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(aruco_dict)
         self.id = id # 標記的 ID
         self.resolution = resolution  # 標記影像的解析度
         self.tag = self.Spawn_Aruco()  # 生成 ArUco 標記
 
         # 如果沒有指定偵測參數，則使用 OpenCV 預設的 DetectorParameters
         if aruco_params == None:
-            self.aruco_params = cv2.aruco.DetectorParameters_create()
+            self.aruco_params = cv2.aruco.DetectorParameters()
         else:
             self.aruco_params = aruco_params
 
@@ -52,7 +52,7 @@ class Aruco():
         # 建立一個黑色的影像作為標記圖像的基礎
         tag = np.zeros((self.resolution, self.resolution, 1), dtype="uint8")
         # 使用 OpenCV 的方法在這個影像上畫出指定 ID 的 ArUco 標記
-        cv2.aruco.drawMarker(self.aruco_dict, self.id, self.resolution, tag, 1)
+        cv2.aruco.generateImageMarker(self.aruco_dict, self.id, self.resolution, tag, 1)
         return tag
 
 # 偵測 ArUco 標記並估算其位姿
