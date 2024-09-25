@@ -7,6 +7,52 @@ import numpy as np
 import cv2
 import time
 
+#############################
+
+# 定義不同顏色物體的 HSV 範圍
+yellow_brick_lower_hsv = np.array([20, 20, 200])   # 黃磚下限 HSV
+yellow_brick_upper_hsv = np.array([50, 255, 255])  # 黃磚上限 HSV
+silver_plane_lower_hsv = np.array([20, 5, 50])     # 銀平面下限 HSV
+silver_plane_upper_hsv = np.array([255, 255, 255]) # 銀平面上限 HSV
+copper_brick_lower_hsv = np.array([10, 100, 50])   # 銅磚下限 HSV
+copper_brick_upper_hsv = np.array([50, 200, 255])  # 銅磚上限 HSV
+        
+# 初始化 ArUco 標記的類型與參數
+aruco_5x5_100_id = aruco.Aruco(aruco.ARUCO_DICT().DICT_5X5_100, 1, 200)# ArUco 標記類型為 5x5，ID 為 1，解析度為 200
+aruco_length = 0.0525# ArUco 標記的實際物理長度，單位為米
+
+# 定義物體所在區域的起點和終點
+# 這兩個點用於表示機械手臂操作的工作區域
+# o_point 是區域的起點，e_point 是區域的終點
+#x : 388.442, y : -73.33200000000001, z : 325.693, rx: 179.987, ry: -0.004, rz: -106.121 id 1 tcp
+#x : 637.4350000000001, y : 221.607, z : 322.593, rx: 179.987, ry: -0.004, rz: -106.121 id 4 tcp
+o_point = (-73.332, 388.442)
+e_point = (221.607, 637.435)
+# 定義物體的 Z 軸高度，用於定位吸附點的高度
+z_height = 319.796
+
+# 計算工作區域的寬度和高度，根據起點和終點計算
+real_width = e_point[0] - o_point[0]
+real_height = e_point[1] - o_point[1]
+
+# 取得 RealSense 相機的內參數 K，用於影像校正與轉換
+K = realsense.Get_Color_K()
+# 相機畸變參數 D，這裡設定為無畸變
+D = np.array([0.0,0.0,0.0,0.0,0.0,])
+
+# 初始化 Modbus TCP 連接，用於控制機械手臂
+c = ModbusTcpClient(host="192.168.1.1", port=502)
+c.connect()
+
+# 定義機械手臂的 home 點與放置點的位姿
+# home: 機械手臂的初始位置，表示手臂在空間中的預設姿態
+# drop: 機械手臂移動物體後，物體要放置的位置
+#home = [353.208, -48.09, 680.0, 179.987, -0.004, -106.121] #old home
+home = [379.870, -2.034, 680.0, 179.987, -0.004, -106.121]
+drop =[479.442, 385.366, 521.66, 179.987, -0.004, -106.121]
+#############################
+
+
 # 用於定義目標區域的函數
 def AOI(frame, lower_hsv = np.array([20, 20, 200]), upper_hsv = np.array([50, 255, 255]), min_area = 300, crop_size = 40):
      # 剪裁影像
@@ -109,19 +155,19 @@ def Find_Suction_Object(lower_hsv, upper_hsv):
 def Suction_Behave(real_points):
     if len(real_points) > 0:
         # 移動到吸附點的上方，然後下降進行吸附
-        send.Go_Position(c, real_points[0][0], real_points[0][1], home[2], home[3], home[4], home[5], 50)
-        send.Go_Position(c, real_points[0][0], real_points[0][1], z_height, home[3], home[4], home[5], 50)
+        send.Go_Position(c, real_points[0][0], real_points[0][1], home[2], home[3], home[4], home[5],speed= 50)
+        send.Go_Position(c, real_points[0][0], real_points[0][1], z_height, home[3], home[4], home[5],speed= 50)
         send.Suction_ON(c)
-        send.Go_Position(c, real_points[0][0], real_points[0][1], home[2], home[3], home[4], home[5], 50)
+        send.Go_Position(c, real_points[0][0], real_points[0][1], home[2], home[3], home[4], home[5],speed= 50)
 
         # 移動到放置點，並釋放物品
-        send.Go_Position(c, drop[0], drop[1], drop[2], home[3], home[4], home[5], 50)
-        send.Go_Position(c, drop[0], drop[1], z_height, home[3], home[4], home[5], 50)
+        send.Go_Position(c, drop[0], drop[1], drop[2], home[3], home[4], home[5],speed= 50)
+        send.Go_Position(c, drop[0], drop[1], z_height, home[3], home[4], home[5],speed= 50)
         send.Suction_OFF(c)
-        send.Go_Position(c, drop[0], drop[1], drop[2], home[3], home[4], home[5], 50)
+        send.Go_Position(c, drop[0], drop[1], drop[2], home[3], home[4], home[5],speed= 50)
 
         # 返回 home 點
-        send.Go_Position(c, home[0], home[1], home[2], home[3], home[4], home[5], 50)
+        send.Go_Position(c, home[0], home[1], home[2], home[3], home[4], home[5],speed= 50)
 
 def main():
     """
@@ -130,8 +176,7 @@ def main():
     """
     # 初始化機械手臂到 home 點
     # home 點是初始位置，保證手臂從固定位置開始執行任務
-    send.Go_Position(c, home[0], home[1], home[2], home[3], home[4], home[5], 50)
-
+    send.Go_Position(c, home, block=True)
     # 讀取 RealSense 相機的初始畫面
     # 此處使用 50 次讀取來初始化相機，以避免相機啟動初期可能的延遲或不穩定
     for i in range(50):
@@ -143,6 +188,9 @@ def main():
     #while True:
         # 使用指定的 HSV 範圍來檢測銀色平面的目標區域，直到找到目標
         output, real_points = Find_Suction_Object(silver_plane_lower_hsv, silver_plane_upper_hsv)
+        frame = realsense.Get_RGB_Frame()
+        cv2.imshow("frame", frame)
+        cv2.waitKey(1)
     #找到目標點後，show出圖像
     cv2.imshow("output", output)
     cv2.waitKey(1)
@@ -152,108 +200,7 @@ def main():
     Suction_Behave(real_points)
     print("Job done!!!")
 
-# 定義不同顏色物體的 HSV 範圍
-yellow_brick_lower_hsv = np.array([20, 20, 200])   # 黃磚下限 HSV
-yellow_brick_upper_hsv = np.array([50, 255, 255])  # 黃磚上限 HSV
-silver_plane_lower_hsv = np.array([20, 5, 50])     # 銀平面下限 HSV
-silver_plane_upper_hsv = np.array([255, 255, 255]) # 銀平面上限 HSV
-copper_brick_lower_hsv = np.array([10, 100, 50])   # 銅磚下限 HSV
-copper_brick_upper_hsv = np.array([50, 200, 255])  # 銅磚上限 HSV
-        
-# 初始化 ArUco 標記的類型與參數
-aruco_5x5_100_id = aruco.Aruco(aruco.ARUCO_DICT().DICT_5X5_100, 1, 200)# ArUco 標記類型為 5x5，ID 為 1，解析度為 200
-aruco_length = 0.0525# ArUco 標記的實際物理長度，單位為米
 
-# 定義物體所在區域的起點和終點
-# 這兩個點用於表示機械手臂操作的工作區域
-# o_point 是區域的起點，e_point 是區域的終點
-#x : 388.442, y : -73.33200000000001, z : 325.693, rx: 179.987, ry: -0.004, rz: -106.121 id 1 tcp
-#x : 637.4350000000001, y : 221.607, z : 322.593, rx: 179.987, ry: -0.004, rz: -106.121 id 4 tcp
-o_point = (-73.332, 388.442)
-e_point = (221.607, 637.435)
-# 定義物體的 Z 軸高度，用於定位吸附點的高度
-z_height = 324.796
-
-# 計算工作區域的寬度和高度，根據起點和終點計算
-real_width = e_point[0] - o_point[0]
-real_height = e_point[1] - o_point[1]
-
-# 取得 RealSense 相機的內參數 K，用於影像校正與轉換
-K = realsense.Get_Color_K()
-# 相機畸變參數 D，這裡設定為無畸變
-D = np.array([0.0,0.0,0.0,0.0,0.0,])
-
-# 初始化 Modbus TCP 連接，用於控制機械手臂
-c = ModbusTcpClient(host="192.168.1.1", port=502)
-c.connect()
-
-# 定義機械手臂的 home 點與放置點的位姿
-# home: 機械手臂的初始位置，表示手臂在空間中的預設姿態
-# drop: 機械手臂移動物體後，物體要放置的位置
-home = [353.208, -48.09, 680.0, 179.987, -0.004, -106.121]
-drop =[479.442, 385.366, 521.66, 179.987, -0.004, -106.121]
-
-
-
-
-############################################################
-def Find_4_Arucos(frame, aruco_dict, aruco_params):
-    """
-    偵測 ArUco 標記並在找到 4 個標記後顯示結果。
-    
-    參數:
-    - frame: 當前相機畫面
-    - aruco_dict: ArUco 字典
-    - aruco_params: ArUco 檢測參數
-    
-    回傳:
-    - bool: 是否找到 4 個 ArUco 標記
-    """
-    # 使用 cv2.aruco 檢測 ArUco 標記
-    corners, ids, rejected = cv2.aruco.detectMarkers(frame, aruco_dict, parameters=aruco_params)
-    
-    # 如果找到4個或更多標記
-    if ids is not None and len(ids) >= 4:
-        # 繪製邊框在標記周圍
-        cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-        
-        # 在畫面上顯示帶有標記的相機畫面
-        cv2.imshow('Aruco Markers', frame)
-        cv2.waitKey(0)  # 等待按下任意鍵後繼續
-        cv2.destroyAllWindows()
-        
-        return True  # 偵測成功
-    else:
-        return False  # 偵測失敗
-###############################################################
-
-def Find_4_Arucos():
-    # 設置 ArUco 字典和參數
-    aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-    aruco_params = cv2.aruco.DetectorParameters_create()
-    
-    try:
-        while True:
-            # 抓取相機畫面
-            frames = pipeline.wait_for_frames()
-            color_frame = frames.get_color_frame()
-            if not color_frame:
-                continue
-
-            # 將 RealSense 畫面轉換為 OpenCV 格式
-            frame = np.asanyarray(color_frame.get_data())
-
-            # 呼叫 Find_4_Arucos 檢測 ArUco 標記
-            found = Find_4_Arucos(frame, aruco_dict, aruco_params)
-            
-            if found:
-                print("4 ArUco markers detected and displayed.")
-                break  # 偵測成功後退出循環
-                
-    finally:
-        # 停止相機管線
-        pipeline.stop()
-#################################################################
 # 程式入口，主程式將執行三次 main 函數來測試多次吸附動作
 if __name__ == "__main__":
     for i in range(3):
