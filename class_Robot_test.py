@@ -17,3 +17,4 @@ if __name__   == "__main__":
         print(robotDRV.Get_TCP_Pose)
         if robotDRV.isRobotReachTargetPosition :
             break
+    #這邊在測試branch的commit是否正常運作

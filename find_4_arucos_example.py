@@ -3,25 +3,26 @@ from landmark import util
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-
+from realsense import realsense
 '''
 這是一個使用 RealSense 相機偵測 ArUco 標記的範例程式。
 它會尋找指定Aruco標記集中所有的 ArUco 標記，並根據指定的Aruco標記的ID，以其座標建立相機的座標系。
 '''
 
+aruco_5x5_100_id_24 = aruco.Aruco(aruco.ARUCO_DICT().DICT_5X5_100, 2, 300)#這行請根據需要改用對應的aruco標記集
 
-aruco_5x5_100_id_24 = aruco.Aruco(aruco.ARUCO_DICT().DICT_6X6_50, 2, 300)#這行請根據需要改用對應的aruco標記集
-
-cap = cv2.VideoCapture(0)#請根據需要更改相機號碼，參照find_cameras.py
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # 設定相機解析度寬度為 1280
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # 設定相機解析度高度為 720
-aruco_length = 0.08  # ArUco 標記的實際邊長（單位：米）
+#cap = cv2.VideoCapture(0)#請根據需要更改相機號碼，參照find_cameras.py
+#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # 設定相機解析度寬度為 1280
+#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # 設定相機解析度高度為 720
+aruco_length = 0.0529  # ArUco 標記的實際邊長（單位：米）
 
 # 相機內參矩陣 K，定義相機的焦距和光軸中心點等信息
-K=np.array(
-    [[739.0986938476562,0.0,660.466777227186],
-    [0.0,737.6295166015625,371.63861588193686],
-    [0.0,0.0,1.0]])#相機內部參數，不用動
+#K=np.array(
+#    [[739.0986938476562,0.0,660.466777227186],
+#    [0.0,737.6295166015625,371.63861588193686],
+#    [0.0,0.0,1.0]])#相機內部參數，不用動
+K = realsense.Get_Color_K()
+print("get K success")
 
 D=np.array([0.0,0.0,0.0,0.0,0.0,])#畸變函數，全部打0當作不畸變
 
@@ -37,12 +38,13 @@ while True:
     plt.cla()
     
     # 從相機中讀取一幀影像
-    ret, frame = cap.read()
-    
+    frame = realsense.Get_RGB_Frame()
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)#因為使用realsense，預設排列的RGB順序與cv2不同，所以先做轉換
+
     # 使用 ArUco 偵測函數，來檢測影像中的 ArUco 標記
     # 返回值包括是否檢測成功 (ret)，相機到 ArUco 的轉換矩陣，ArUco 到相機的轉換矩陣，標記 ID 和角點坐標
     ret, T_cam_to_aruco_result, T_aruco_to_cam_result, id_result, corner_result = aruco.Detect_Aruco(
-        frame, K, D, aruco_length, aruco_5x5_100_id_24.aruco_dict, aruco_5x5_100_id_24.aruco_params, True)
+        frame, K, D, aruco_length, aruco_5x5_100_id_24.aruco_dict, aruco_5x5_100_id_24.aruco_params,is_draw_aruco= True)
     
     if ret:  # 如果偵測成功
         for id, T in zip(id_result, T_aruco_to_cam_result):  # 迭代每個標記
@@ -54,8 +56,8 @@ while True:
                 t_aruco_to_cam[0][0], t_aruco_to_cam[1][0], t_aruco_to_cam[2][0])
             
             # 如果這個標記的 ID 與我們定義的 ArUco ID 相同，則在 3D 圖形中繪製相機
-            if id == aruco_5x5_100_id_24.id:
-                util.Draw_Camera(K, R_aruco_to_cam, t_aruco_to_cam, cam_text, ax, f=0.08)
+            #if id == aruco_5x5_100_id_24.id:
+                #util.Draw_Camera(K, R_aruco_to_cam, t_aruco_to_cam, cam_text, ax, f=0.08)
     
     # 在 3D 圖形中繪製 ArUco 標記
     util.Draw_Aruco(ax, aruco_length)
@@ -71,11 +73,11 @@ while True:
     ax.set_zlabel('z')
     
     # 更新 3D 圖形並立即顯示
-    plt.show(block=False)
-    plt.pause(0.001)
+    #plt.show(block=False)
+    #plt.pause(0.001)
     
     # 顯示相機畫面
-    cv2.imshow("s", frame)
+    cv2.imshow("Detect_4_Arucos", frame)
     
     # 如果按下 'q' 鍵，退出迴圈
     if cv2.waitKey(1) == ord('q'):

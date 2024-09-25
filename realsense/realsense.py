@@ -6,6 +6,7 @@ pipeline = rs.pipeline()
 
 # 配置管線 (可以用來設定流的參數，如解析度、幀率等)
 config = rs.config()
+#config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
 # 開始管線，啟動相機的數據流
 pipeline.start(config)
