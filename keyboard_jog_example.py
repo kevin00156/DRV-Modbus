@@ -61,6 +61,7 @@ def on_press(key):
 
 # 定義鍵盤釋放事件
 def on_release(key):
+    R_TRIG_tab(key == keyboard.Key.tab)
     if key in [keyboard.Key.up, keyboard.Key.down, keyboard.Key.left, keyboard.Key.right, keyboard.Key.ctrl_l, keyboard.Key.shift_l]:
         send.Jog_Stop(c)
     if key == keyboard.Key.esc:  # 按下 ESC 鍵退出

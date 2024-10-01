@@ -11,10 +11,9 @@ if __name__   == "__main__":
     
     robotDRV = Robot(modbusTCPClient)
     
-    robotDRV.Send_Motion_Command(robotCommand=eRobotCommand.Robot_All_Joints_Homing_To_Origin)#測試回home功能
+    robotDRV.sendMotionCommand(robotCommand=eRobotCommand.Robot_All_Joints_Homing_To_Origin)#測試回home功能
 
     while True:
         print(robotDRV.Get_TCP_Pose)
         if robotDRV.isRobotReachTargetPosition :
             break
-    #這邊在測試branch的commit是否正常運作
