@@ -5,6 +5,10 @@ from pymodbus.client import ModbusTcpClient
 MovP = 0
 MovL = 1
 
+"""
+this library has been deprecated
+"""
+
 def Go_Position(c, *args, speed=20, mov=0, block=True):
     """
     讓機械手臂移動到指定的位置 (X, Y, Z, Rx, Ry, Rz)

@@ -16,14 +16,17 @@ DRV Modbus 是一個基於 `pymodbus` 的 Python 庫，用於控制台達 DRV �
 ```bash
 DRV-Modbus/
 ├── aruco_spawn_example.py       # ArUco 標記生成範例
-├── drv_modbus/                  # Modbus 相關模組
+├── drv_modbus/                  # Modbus 相關模組#已棄用
 ├── drv_modbus_example.py        # Modbus 控制範例
 ├── find_aruco_example.py        # ArUco 標記檢測範例
 ├── keyboard_jog_example.py      # 鍵盤控制機械手臂移動的範例
 ├── realsense_RGB_example.py     # RealSense 相機範例
 ├── warp_suction_example.py      # 吸盤控制範例
 ├── README.md                    # 本說明文件
-└── ...
+└── robot/
+    ├── Class_Robot.py           # 機械手臂控制類別(控制機械手臂請使用此類別)
+    ├── enumRobotCommand.py      # 機械手臂控制命令表
+    └── ...
 ```
 
 主要功能
@@ -33,16 +36,15 @@ DRV-Modbus/
 
 透過 Modbus 協議控制台達 DRV 機械手臂的運動。
 
--   **TCP 姿態讀取**: 讀取機械手臂末端執行器的Pose。
--   **移動控制**: 透過 `Go_Position` 函數實現機械手臂的精確移動。
--   **吸盤控制**: 控制吸盤的啟動與停止。
+-   **robot控制**: 提供一個類別，方便控制機械手臂  
+-   **warp_suction_example.py** : 子辰學長最終寫的demo，用以判斷並吸取銀板，並根據銀板顏色放置在不同位置  
 
 ### 2\. ArUco 標記
 
 透過 ArUco 標記進行機械手臂的校正與標定。
 
--   **標記生成**: 利用 `aruco_spawn_example.py` 生成 ArUco 標記圖像。
--   **標記檢測**: 使用 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記。
+-   **標記生成**: 利用 `aruco_spawn_example.py` 生成 ArUco 標記圖像。  
+-   **標記檢測**: 使用 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記。  
 
 ### 3\. RealSense 支持
 
@@ -115,17 +117,16 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 `python find_aruco_example.py` 
 
 
-**以下仍未測試**
-    ### 5\. 控制吸盤
+### 5\. 控制吸盤
 
-    運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
+運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
 
-    `python warp_suction_example.py` 
-    
-    這個功能比較複雜，是檢測aruco位置後，還要命令機械手臂移動並控制吸盤的程式  
-    目前仍在研究中  
+`python warp_suction_example.py` 
 
-    如果吸盤並不裝在DO_0，請嘗試更改發送的命令為你的DO
+這個功能比較複雜，是檢測aruco位置後，還要命令機械手臂移動並控制吸盤的程式  
+目前仍在研究中  
+
+如果吸盤並不裝在DO_0，請嘗試更改發送的命令為你的DO
 
 詳細方法請根據二進制決定發送的值，如DO_10，則請將輸入改為$`10^{10}=1024`$，如
 ```
@@ -139,6 +140,7 @@ def Suction_ON(c):
     c.write_register(0x02FE, 1024, 2)#改這行的第二個arg
     
 #Suction_OFF同理，或可以新增自己的函式，或可以寫為int(0b0000010000000000)
+備註：舊版有關request.py, send.py已經棄用，請改用robot類別來處理
 ```
 貢獻
 --

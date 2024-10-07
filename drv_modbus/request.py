@@ -1,6 +1,10 @@
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.constants import Endian
 import time
+"""
+this library has been deprecated
+"""
+
 
 # 定義自訂例外
 class RequestErrorExpection(Exception):

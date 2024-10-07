@@ -176,7 +176,7 @@ def main():
     """
     # 初始化機械手臂到 home 點
     # home 點是初始位置，保證手臂從固定位置開始執行任務
-    send.Go_Position(c, home, block=True)
+    send.Go_Position(c,home, block=True)
     # 讀取 RealSense 相機的初始畫面
     # 此處使用 50 次讀取來初始化相機，以避免相機啟動初期可能的延遲或不穩定
     for i in range(50):

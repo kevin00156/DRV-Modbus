@@ -2,7 +2,7 @@ from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
 from pymodbus.client import ModbusTcpClient
 import time
-from robot.enumRobotCommand import eRobotCommand 
+from robot.enumRobotCommand import eRobotCommand
 
 # 自訂例外
 class RequestErrorException(Exception):
@@ -28,6 +28,26 @@ def setBit(num, *args):
     # 對 num 進行按位 OR 操作
     return num | mask
 class Robot:
+    """
+    Robot 類別
+
+    這個類別提供了控制台達機器人的各種功能。
+
+    主要功能:
+    1. 移動控制: 可以控制機器人移動到指定位置或執行特定運動命令。
+    2. 狀態查詢: 可以獲取機器人的當前位置、錯誤代碼、運動狀態等資訊。
+    3. IO控制: 可以控制機器人的數位輸出，如吸盤的開關。
+
+    使用方法:
+    1. 初始化: 創建 Robot 物件時，可以提供 ModbusTcpClient 或主機地址。
+    2. 移動命令: 使用 sendMotionCommand() 方法發送移動指令。
+    3. 狀態檢查: 使用 getTCPPose(), getRobotErrorCode() 等方法獲取機器人狀態。
+    4. IO操作: 使用 suctionON(), suctionOFF(), setIO() 等方法控制輸出。
+
+    注意事項:
+    - 使用前請確保已正確連接到機器人。
+    - 操作時請注意安全，避免碰撞。
+    """
     def __init__(self, modbusTCPClient=None, host=None, motionBlock=False, motionBlockTime = 0.1, suctionDigitalOutputNumber = 0b0000000000000001):
         """
         Robot 類別的建構函數
@@ -127,7 +147,7 @@ class Robot:
         elif len(args) == 6:
             # 當 args 傳入6個獨立的座標值
             x, y, z, rx, ry, rz = args
-        elif len(args) == 0:
+        elif len(args) == 1 or args is None:
             # 當 args 為 None，不做特別處理
             x, y, z, rx, ry, rz = None, None, None, None, None, None
         else:
@@ -136,11 +156,32 @@ class Robot:
 
     @property
     def latestDigitalOutputCommand(self):
+        """
+        獲取最近一次的數位輸出命令
+        """
         return self.__latestDigitalOutputCommand
     
     @latestDigitalOutputCommand.setter
     def latestDigitalOutputCommand(self, value):
+        """
+        設置最近一次的數位輸出命令
+        
+        參數:
+        value: 要設置的數位輸出命令值
+        """
         self.__latestDigitalOutputCommand = value
+
+    @property
+    def isRobotError(self):
+        """
+        檢查機器人是否處於錯誤狀態
+        
+        返回:
+        bool: 如果機器人有錯誤則返回True，否則返回False
+        """
+        error_code = self.getRobotErrorCode()
+        return error_code != 0  # 假設錯誤代碼為0表示沒有錯誤
+
 
     ########################################################################
     def getTCPPose(self):
@@ -206,7 +247,17 @@ class Robot:
         # 檢查 robotCommand 是否是 301~307 (動作命令)
         if robotCommand not in (eRobotCommand.Robot_Go_MovP, eRobotCommand.Robot_Go_MovL, 
                                 eRobotCommand.Robot_Go_MultiMoveJ, eRobotCommand.Robot_Go_MArchP, 
-                                eRobotCommand.Robot_Go_MArchL, eRobotCommand.Robot_All_Joints_Homing_To_Origin):
+                                eRobotCommand.Robot_Go_MArchL, eRobotCommand.Robot_All_Joints_Homing_To_Origin,
+                                eRobotCommand.Continue_JOG_X_Positive, eRobotCommand.Continue_JOG_X_Negative,
+                                eRobotCommand.Continue_JOG_Y_Positive, eRobotCommand.Continue_JOG_Y_Negative,
+                                eRobotCommand.Continue_JOG_Z_Positive, eRobotCommand.Continue_JOG_Z_Negative,
+                                eRobotCommand.Continue_JOG_RX_Positive, eRobotCommand.Continue_JOG_RX_Negative,
+                                eRobotCommand.Continue_JOG_RY_Positive, eRobotCommand.Continue_JOG_RY_Negative,
+                                eRobotCommand.Continue_JOG_RZ_Positive, eRobotCommand.Continue_JOG_RZ_Negative,
+                                eRobotCommand.Continue_JOG_External_Axis_1_Negative, eRobotCommand.Continue_JOG_External_Axis_1_Positive,
+                                eRobotCommand.Continue_JOG_External_Axis_2_Negative, eRobotCommand.Continue_JOG_External_Axis_2_Positive,
+                                eRobotCommand.Continue_JOG_External_Axis_3_Negative, eRobotCommand.Continue_JOG_External_Axis_3_Positive,
+                                ):
             # 如果 robotCommand 不是 301~307，且 args 為 None，則拋出例外
             if x is None:
                 raise AssertionError("動作命令不正確且未提供座標")
@@ -236,109 +287,119 @@ class Robot:
         if not self.__block :#若不等待結束，則retrun
             return
 
-                
-
-    def goPosition(self, *args, speed=20, robotCommand = eRobotCommand.Motion_Stop):#已棄用
-        """
-        讓機械手臂移動到指定的位置 (X, Y, Z, Rx, Ry, Rz)
-        已棄用 不再維護 請使用sendMotionCommand命令
-        """
-        builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-
-        # 根據參數將位置數據加入到 payload 中
-        if len(args) == 6:
-            for value in args:
-                builder.add_32bit_int(int(value * 1000))
-        elif len(args) == 1 and isinstance(args[0], list) and len(args[0]) == 6:
-            for value in args[0]:
-                builder.add_32bit_int(int(value * 1000))
-        else:
-            raise ValueError("參數錯誤，應傳入 6 個座標值或一個包含 6 個值的 list")
-
-        payload = builder.to_registers()
-
-        # 設置移動速度和目標位姿
-        self.modbusTCPClient.write_register(0x0324, speed, 2)
-        self.modbusTCPClient.write_registers(0x0330, payload, 2)
-
-        #執行命令
-        self.modbusTCPClient.write_register(0x0300, robotCommand, 2)
-
-        print("Start moving...")
-
-        # 如果 block 為 True，等待運動完成
-        if self.__block:
-            self.waitRobotReachTargetPosition()
-        print("Move done!")
-
-
-
-
-
-
     ##############################################################
     def suctionON(self):
         """
         打開吸盤
         """
-        self.latestDigitalOutputCommand = setBit(self.latestDigitalOutput,0)
+        self.latestDigitalOutputCommand = setBit(self.latestDigitalOutputCommand,self.suctionDigitalOutputNumber)
         self.modbusTCPClient.write_register(0x02FE, self.latestDigitalOutputCommand, 2)
 
     def suctionOFF(self):
         """
         關閉吸盤
         """
-        self.latestDigitalOutputCommand = clearBit(self.latestDigitalOutput,0)
+        self.latestDigitalOutputCommand = clearBit(self.latestDigitalOutputCommand,self.suctionDigitalOutputNumber)
         self.modbusTCPClient.write_register(0x02FE, 0, 2)
-    ##############################################################
 
-    def jogPosition(self, *args):
+    def setIO(self, *args):#設定數位輸出(以二進制設定)
         """
-        手動模式移動機械手臂
+        設定數位輸出
         """
-        if len(args) == 1 and isinstance(args[0], list) and len(args[0]) == 6:
-            x, y, z, rx, ry, rz = args[0]
-        elif len(args) == 6:
-            x, y, z, rx, ry, rz = args
+        if len(args) == 1 and isinstance(args[0], int):#若傳入一個值，則將該值設定為數位輸出(以二進制)
+            data = args[0]
+        elif len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], bool):#若傳入兩個值，則將該值所指的bit做設定或清除
+            if args[0] > 15 or args[0] < 0:
+                raise ValueError("參數錯誤，應傳入一個數字或一個0~16的數字及True或False")
+            if args[1] == True:
+                data = setBit(self.latestDigitalOutputCommand,args[0])
+            else:
+                data = clearBit(self.latestDigitalOutputCommand,args[0])
         else:
-            raise ValueError("必須傳入6個數值或一個包含6個數值的list")
-
-        # 根據方向參數控制 Jog 移動
-        if x > 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_X_Positive, 2)
-        elif x < 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_X_Negative, 2)
-        if y > 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_Y_Positive, 2)
-        elif y < 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_Y_Negative, 2)
-        if z > 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_Z_Positive, 2)
-        elif z < 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_Z_Negative, 2)
-        if rx > 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_RX_Positive, 2)
-        elif rx < 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_RX_Negative, 2)
-        if ry > 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_RY_Positive, 2)
-        elif ry < 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_RY_Negative, 2)
-        if rz > 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_RZ_Positive, 2)
-        elif rz < 0:
-            self.modbusTCPClient.write_registers(0x0300, eRobotCommand.Continue_JOG_RZ_Negative, 2)
-
-    def jogStop(self):
-        """
-        停止機械手臂的 Jog 模式運動
-        """
-        self.modbusTCPClient.write_registers(0x0300, 0, 2)
+            raise ValueError("參數錯誤，應傳入一個數字或一個0~16的數字及True或False")
+        self.latestDigitalOutputCommand = data
+        self.modbusTCPClient.write_register(0x02FE, self.latestDigitalOutputCommand, 2)
+    ##############################################################
 
     def motionStop(self):
         """
         停止所有運動
         """
-        self.modbusTCPClient.write_registers(0x0300, 1000, 2)
+        self.modbusTCPClient.write_registers(0x0300, 0, 2)
         if self.__block:
             self.waitRobotReachTargetPosition()
+
+    ##############################################################
+    #系統層級工作
+
+    def AllAxisEnable(self):
+        """
+        啟用所有伺服軸
+        """
+        self.modbusTCPClient.write_register(0x0010, int(0x0001), 2)
+
+    def AllAxisDisable(self):
+        """
+        禁用所有伺服軸
+        """
+        self.modbusTCPClient.write_register(0x0010, int(0x0002), 2)
+
+    def getRobotErrorCode(self):
+        """
+        獲取機器人錯誤碼
+        """
+        request = self.modbusTCPClient.read_holding_registers(0x01FF, 1, 2)
+        if request.isError():
+            raise RequestErrorException("Request error.")
+        return request.registers[0]
+        
+    def resetRobotError(self):
+        """
+        重設機器人錯誤碼
+        """
+        self.modbusTCPClient.write_register(0x0180, 1, 2)
+
+    def getRobotMotionState(self):
+        """
+        獲取機器人運動狀態,0表示停止,1表示運動中
+        """
+        request = self.modbusTCPClient.read_holding_registers(0x00E0, 1, 2)
+        if request.isError():
+            raise RequestErrorException("Request error.")
+        return request.registers[0]
+    
+    def getRobotSystemState(self):
+        """
+        獲取機器人系統狀態,0表示一般狀態,2表示機器人停止，功能性暫停觸發,3表示機器人運動中，但功能性暫停觸發
+        """
+        request = self.modbusTCPClient.read_holding_registers(0x0138, 1, 2)
+        if request.isError():
+            raise RequestErrorException("Request error.")
+        return request.registers[0]
+
+    def getOperationMode(self):
+        """
+        獲取操作模式狀態,0表示非有線,1表示T1，2表示T2，3表示自動模式
+        """
+        request = self.modbusTCPClient.read_holding_registers(0x0139, 1, 2)
+        if request.isError():
+            raise RequestErrorException("Request error.")
+        return request.registers[0]
+
+    def getTeachPanelState(self):
+        """
+        獲取TP教導盒啟用狀態,0表示未啟用,1表示啟用
+        """
+        request = self.modbusTCPClient.read_holding_registers(0x013B, 1, 2)
+        if request.isError():
+            raise RequestErrorException("Request error.")
+        return request.registers[0]
+
+    def getTeachPanelMode(self):
+        """
+        獲取TP教導盒模式,0表示手動模式,1表示自動模式
+        """
+        request = self.modbusTCPClient.read_holding_registers(0x013C, 1, 2)
+        if request.isError():
+            raise RequestErrorException("Request error.")
+        return request.registers[0]
