@@ -12,7 +12,7 @@ class RequestErrorException(Exception):
 
 ###########################################################
 def clearBit(num, *args):
-    # 創建掩碼，將第 n 位設為 0，其他位設為 1
+    # 創建遮罩，將第 n 位設為 0，其他位設為 1
     if (args >0 and isinstance(args,int)):
         operationBits = args
     for bit in operationBits:
@@ -20,7 +20,7 @@ def clearBit(num, *args):
     # 對 num 進行按位 AND 操作
     return num & mask
 def setBit(num, *args):
-    # 創建掩碼，將第 n 位設為 1，其他位保持不變
+    # 創建遮罩，將第 n 位設為 1，其他位保持不變
     if (args >0 and isinstance(args,int)):
         operationBits = args
     for bit in operationBits:
@@ -182,7 +182,16 @@ class Robot:
         error_code = self.getRobotErrorCode()
         return error_code != 0  # 假設錯誤代碼為0表示沒有錯誤
 
-
+    def isRobotReadyForMotion(self):
+        """
+        檢查機器人是否處於可以運動的狀態
+        
+        返回:
+        bool: 如果機器人可以運動則返回True，否則返回False
+        """
+        return (not self.isRobotError and self.isRobotReachTargetPosition and 
+                self.getTeachPanelMode()==0 and self.getOperationMode()==3 and
+                self.getRobotSystemState()==0)
     ########################################################################
     def getTCPPose(self):
         """
@@ -241,6 +250,9 @@ class Robot:
             deceleration: 減速度 (預設為10)。
             robotCommand: 機器人指令，預設為停止命令。
         """
+        if not self.isRobotReadyForMotion():
+            print("機器人不允許運動")
+            return
         self.latestMotionCommand = args#解析args為x,y,z,rx,ry,rz 順便紀錄
         x, y, z, rx, ry, rz = self.latestMotionCommand#解出剛紀錄的值
 
@@ -344,62 +356,68 @@ class Robot:
         """
         self.modbusTCPClient.write_register(0x0010, int(0x0002), 2)
 
+    def _read_register(self, address, count=1):
+        """
+        讀取寄存器並檢查錯誤的輔助方法。
+
+        參數:
+        address: 寄存器地址
+        count: 讀取的寄存器數量
+
+        返回:
+        寄存器的值
+        """
+        request = self.modbusTCPClient.read_holding_registers(address, count, 2)
+        if request.isError():
+            raise RequestErrorException
+        (f"與modbus連接對象{self.modbusTCPClient.comm_params.host}:{self.modbusTCPClient.comm_params.port}無法通訊")
+        return request.registers[0]
+
     def getRobotErrorCode(self):
         """
         獲取機器人錯誤碼
         """
-        request = self.modbusTCPClient.read_holding_registers(0x01FF, 1, 2)
-        if request.isError():
-            raise RequestErrorException("Request error.")
-        return request.registers[0]
-        
-    def resetRobotError(self):
-        """
-        重設機器人錯誤碼
-        """
-        self.modbusTCPClient.write_register(0x0180, 1, 2)
+        return self._read_register(0x01FF)
 
     def getRobotMotionState(self):
         """
         獲取機器人運動狀態,0表示停止,1表示運動中
         """
-        request = self.modbusTCPClient.read_holding_registers(0x00E0, 1, 2)
-        if request.isError():
-            raise RequestErrorException("Request error.")
-        return request.registers[0]
-    
+        return self._read_register(0x00E0)
+
     def getRobotSystemState(self):
         """
-        獲取機器人系統狀態,0表示一般狀態,2表示機器人停止，功能性暫停觸發,3表示機器人運動中，但功能性暫停觸發
+        獲取機器人系統狀態,
+        0表示一般狀態,
+        2表示機器人停止，功能性暫停觸發,
+        3表示機器人運動中，但功能性暫停觸發
         """
-        request = self.modbusTCPClient.read_holding_registers(0x0138, 1, 2)
-        if request.isError():
-            raise RequestErrorException("Request error.")
-        return request.registers[0]
+        return self._read_register(0x0138)
 
     def getOperationMode(self):
         """
-        獲取操作模式狀態,0表示非有線,1表示T1，2表示T2，3表示自動模式
+        獲取操作模式狀態,
+        0表示非有線,
+        1表示T1,
+        2表示T2,
+        3表示自動模式
         """
-        request = self.modbusTCPClient.read_holding_registers(0x0139, 1, 2)
-        if request.isError():
-            raise RequestErrorException("Request error.")
-        return request.registers[0]
+        return self._read_register(0x0139)
 
     def getTeachPanelState(self):
         """
         獲取TP教導盒啟用狀態,0表示未啟用,1表示啟用
         """
-        request = self.modbusTCPClient.read_holding_registers(0x013B, 1, 2)
-        if request.isError():
-            raise RequestErrorException("Request error.")
-        return request.registers[0]
+        return self._read_register(0x013B)
 
     def getTeachPanelMode(self):
         """
         獲取TP教導盒模式,0表示手動模式,1表示自動模式
         """
-        request = self.modbusTCPClient.read_holding_registers(0x013C, 1, 2)
-        if request.isError():
-            raise RequestErrorException("Request error.")
-        return request.registers[0]
+        return self._read_register(0x013C)
+
+    def resetRobotError(self):
+        """
+        重設機器人錯誤碼
+        """
+        self.modbusTCPClient.write_register(0x0180, 1, 2)
