@@ -1,6 +1,9 @@
 import numpy as np
 import cv2
 from landmark import util
+import warnings
+from deprecated import deprecated
+warnings.warn(f"此庫{__name__} 已被棄用，請使用Aruco.classAruco", DeprecationWarning, stacklevel=2)
 
 # 定義一個類來封裝 OpenCV 提供的各種 ArUco 字典
 class ARUCO_DICT():
@@ -56,6 +59,7 @@ class Aruco():
         return tag
 
 # 偵測 ArUco 標記並估算其位姿
+@deprecated
 def Detect_Aruco(frame, K, D, aruco_length, aruco_dict, aruco_params, is_draw_aruco = False, is_millimeter = False):
     # 使用 OpenCV 偵測影像中的 ArUco 標記
     corners, ids, rejected = cv2.aruco.detectMarkers(frame, aruco_dict, parameters=aruco_params)
@@ -104,6 +108,7 @@ def Detect_Aruco(frame, K, D, aruco_length, aruco_dict, aruco_params, is_draw_ar
     return True, T_cam_to_aruco_result, T_aruco_to_cam_result, id_result, corner_result
 
 # 計算 ArUco 標記角點的中心點
+@deprecated
 def Corners_Center(corners):
     return np.mean(corners, axis=0)
         

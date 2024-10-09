@@ -1,9 +1,13 @@
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.constants import Endian
 import time
+from deprecated import deprecated
+import warnings
 """
 this library has been deprecated
 """
+
+warnings.warn(f"此庫{__name__} 已被棄用，請使用robot.classRobot", DeprecationWarning, stacklevel=2)
 
 
 # 定義自訂例外
@@ -13,6 +17,7 @@ class RequestErrorExpection(Exception):
         self.error_code = error_code  # 可以自訂屬性來保存錯誤碼或其他相關信息
 
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.getTCPPose() instead")
 def Get_TCP_Pose(robot_client):
     """
     從機械手臂讀取 TCP 位姿 (X, Y, Z, Rx, Ry, Rz)
@@ -47,7 +52,9 @@ def Get_TCP_Pose(robot_client):
 
     return x , y , z , rx, ry, rz
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.getRobotPoseFlag() instead")
 def Get_Pose_Flag(robot_client):
+    Warning("this function has been deprecated")
     """
     獲取當前機械手臂的位姿狀態標誌
     
@@ -69,10 +76,14 @@ def Get_Pose_Flag(robot_client):
     pose_flag = request.registers[0]
     return pose_flag
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.getRobotPoseFlag() instead")
 def isRobotReachTargetPosition(robot_client):
+    Warning("this function has been deprecated")
     return Get_Pose_Flag(robot_client) == 1
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.waitRobotReachTargetPosition() instead")
 def waitRobotReachTargetPosition(robot_client):
+    Warning("this function has been deprecated")
     """
     以while迴圈 卡住執行緒，直到Robot運動完成的檢查功能
     """

@@ -2,6 +2,8 @@ from pymodbus.payload import BinaryPayloadBuilder
 from pymodbus.constants import Endian
 from drv_modbus import request
 from pymodbus.client import ModbusTcpClient
+from deprecated import deprecated
+import warnings
 MovP = 0
 MovL = 1
 
@@ -9,7 +11,11 @@ MovL = 1
 this library has been deprecated
 """
 
+warnings.warn(f"此庫{__name__} 已被棄用，請使用robot.classRobot", DeprecationWarning, stacklevel=2)
+
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.sendMotionCommand() instead")
 def Go_Position(c, *args, speed=20, mov=0, block=True):
+    Warning("this function has been deprecated")
     """
     讓機械手臂移動到指定的位置 (X, Y, Z, Rx, Ry, Rz)
 
@@ -64,7 +70,9 @@ def Go_Position(c, *args, speed=20, mov=0, block=True):
     print("Move done!")
 
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.suctionON() instead")
 def Suction_ON(c):
+    Warning("this function has been deprecated")
     """
     打開吸盤
 
@@ -76,7 +84,10 @@ def Suction_ON(c):
     """
     c.write_register(0x02FE, 1, 2)
     #c.write_register(0x02FE, int(0b0000000000000001), 2) #如果需要使用二進制寫值 可以使用這行
+
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.suctionOFF() instead")
 def Suction_OFF(c):
+    Warning("this function has been deprecated")
     """
     關閉吸盤
 
@@ -86,7 +97,9 @@ def Suction_OFF(c):
     c.write_register(0x02FE, 0, 2)#將所有Output設為0
     #附註：如果你只想對某個output設為0，可以先讀取當前output的值，再將當前output的某個bit反轉，再傳送，就可以達到要求功能
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.sendMotionCommand() instead")
 def Jog_Position(c, *args):
+    Warning("this function has been deprecated")
     """
     通過手動模式 (Jog) 控制機械手臂的移動
     支援兩種呼叫方式:
@@ -145,7 +158,9 @@ def Jog_Position(c, *args):
         c.write_registers(0x0300, 612, 2)
 
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.motionStop() instead")
 def Jog_Stop(c):
+    Warning("this function has been deprecated")
     """
     停止機械手臂的 Jog 模式運動
 
@@ -154,7 +169,9 @@ def Jog_Stop(c):
     """
     c.write_registers(0x0300, 0, 2)
 
+@deprecated(reason="this function has been deprecated, please use robot.classRobot.motionStop() instead")
 def Motion_Stop(c,block = False):
+    Warning("this function has been deprecated")
     """
     停止所有運動(測試中)
 

@@ -1,17 +1,21 @@
-from robot.Class_Robot import Robot
+from robot.classRobot import Robot
 from pymodbus.client import ModbusTcpClient
 from robot.enumRobotCommand import eRobotCommand
 import time
-import drv_modbus.send as send
 
 if __name__   == "__main__":
     
     host = "192.168.1.1"
     modbusTCPClient = ModbusTcpClient(host= host)
     
-    
     robotDRV = Robot(modbusTCPClient)
     
+    ret = robotDRV.prepareRobotForMotion()
+    if ret == False:
+        print("機器人無法進入準備狀態")
+        exit()
+    
+        
     robotDRV.sendMotionCommand(
         robotCommand=eRobotCommand.Robot_All_Joints_Homing_To_Origin,
         speed=100,acceleration=100,deceleration=100)#測試回home功能
@@ -21,7 +25,9 @@ if __name__   == "__main__":
         if robotDRV.isRobotReachTargetPosition :
             break
     
-
+    
+    """
+    
     home = [424.863, 0.328, 663.11, 178.333, -0.679, -111.784]
 
     robotDRV.sendMotionCommand(home,speed=50,acceleration=100,deceleration=100,
@@ -32,7 +38,7 @@ if __name__   == "__main__":
         print(robotDRV.getTCPPose())
         if robotDRV.isRobotReachTargetPosition :
             break
-    
+            
     robotDRV.suctionON()
     time.sleep(2)
     robotDRV.suctionOFF()
@@ -45,3 +51,4 @@ if __name__   == "__main__":
     time.sleep(2)
     robotDRV.setIO(0)#設定所有bit為0
 
+"""

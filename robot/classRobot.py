@@ -48,7 +48,7 @@ class Robot:
     - 使用前請確保已正確連接到機器人。
     - 操作時請注意安全，避免碰撞。
     """
-    def __init__(self, modbusTCPClient=None, host=None, motionBlock=False, motionBlockTime = 0.1, suctionDigitalOutputNumber = 0b0000000000000001):
+    def __init__(self, modbusTCPClient=None, host=None, port = None, motionBlock=False, motionBlockTime = 0.1, suctionDigitalOutputNumber = 0b0000000000000001):
         """
         Robot 類別的建構函數
         - 如果提供 modbusTCPClient，則使用該連接
@@ -59,8 +59,8 @@ class Robot:
             self.modbusTCPClient = modbusTCPClient
             if not self.modbusTCPClient.is_socket_open():
                 self.modbusTCPClient.connect()
-        elif host:
-            self.modbusTCPClient = ModbusTcpClient(host)
+        elif host and port:
+            self.modbusTCPClient = ModbusTcpClient(host, port)
             self.modbusTCPClient.connect()
         else:
             self.modbusTCPClient = None
@@ -86,7 +86,7 @@ class Robot:
         定義屬性getter：檢查Robot是否到達位置
         """
 
-        return self.getPoseFlag() == 1
+        return self.getRobotPoseFlag() == 1
      # 定義 block 的 getter 和 setter
     @property
     def block(self):
@@ -182,6 +182,7 @@ class Robot:
         error_code = self.getRobotErrorCode()
         return error_code != 0  # 假設錯誤代碼為0表示沒有錯誤
 
+    @property
     def isRobotReadyForMotion(self):
         """
         檢查機器人是否處於可以運動的狀態
@@ -189,9 +190,32 @@ class Robot:
         返回:
         bool: 如果機器人可以運動則返回True，否則返回False
         """
-        return (not self.isRobotError and self.isRobotReachTargetPosition and 
-                self.getTeachPanelMode()==0 and self.getOperationMode()==3 and
+        return (not self.isRobotError and #self.isRobotReachTargetPosition and 
+                self.getTeachPanelMode()==0  and
                 self.getRobotSystemState()==0)
+        
+    def getRobotNotReadyReason(self):
+        """
+        檢查機器人未準備運動的原因
+        檢查項目：
+        1. 機器人錯誤碼
+        #2. 機器人未到達位置
+        3. 教導盒未釋放控制權
+        #4. 運行模式，非自動模式
+        5. 機器人系統狀態
+        返回:
+        string: 機器人未準備運動的原因
+        """
+        reason = ""
+        if self.getRobotErrorCode() != 0:
+            reason += "機器人錯誤碼: " +self.getRobotErrorCode() + "\n"
+        #if not self.isRobotReachTargetPosition:
+        #    reason += "機器人未到達位置" + "\n"
+        if self.getTeachPanelMode() !=0 :
+            reason += "教導盒未釋放控制權" + "\n"
+        if self.getRobotSystemState() != 0:
+            reason += "機器人系統狀態: " + str(self.getRobotSystemState()) + "\n"
+        return reason
     ########################################################################
     def getTCPPose(self):
         """
@@ -213,9 +237,10 @@ class Robot:
 
         return x, y, z, rx, ry, rz
 
-    def getPoseFlag(self):
+    def getRobotPoseFlag(self):
         """
         獲取當前機械手臂的位姿狀態標誌
+        return 1 表示到達位置，2表示未到達位置
         """
 
         request = self.modbusTCPClient.read_holding_registers(0x031F, 1, 2)
@@ -239,7 +264,7 @@ class Robot:
                     return
 
 
-    def sendMotionCommand(self, *args, speed=10, acceleration=10, deceleration=10, robotCommand=eRobotCommand.Motion_Stop):
+    def sendMotionCommand(self, *args, speed=10, acceleration=10, deceleration=10, robotCommand=eRobotCommand.Motion_Stop, retry = True, retryTimes = 3, retryDelay = 1):
         """
         發送機械手臂運動命令。
         
@@ -249,8 +274,18 @@ class Robot:
             acceleration: 加速度 (預設為10)。
             deceleration: 減速度 (預設為10)。
             robotCommand: 機器人指令，預設為停止命令。
+            retry: 是否重試，預設為True。
+            retryTimes: 重試次數，預設為3次。
+            retryDelay: 重試延遲時間，預設為1秒。
         """
-        if not self.isRobotReadyForMotion():
+        
+        if retry:
+            for i in range(retryTimes):
+                if self.isRobotReadyForMotion:
+                    break
+                time.sleep(retryDelay)
+        
+        if not self.isRobotReadyForMotion:
             print("機器人不允許運動")
             return
         self.latestMotionCommand = args#解析args為x,y,z,rx,ry,rz 順便紀錄
@@ -287,15 +322,15 @@ class Robot:
                 payload = builder.to_registers()
 
                 # 設定速度、加速度、減速度
-                self.modbusTCPClient.write_register(0x0324, speed, 2)  # 設定速度
-                self.modbusTCPClient.write_register(0x030A, acceleration, 2)  # 設定加速度
-                self.modbusTCPClient.write_register(0x030C, deceleration, 2)  # 設定減速度
+                self.writeRegister(0x0324, speed)  # 設定速度
+                self.writeRegister(0x030A, acceleration)  # 設定加速度
+                self.writeRegister(0x030C, deceleration)  # 設定減速度
 
                 # 發送位姿命令到 0x0330 地址
-                self.modbusTCPClient.write_registers(0x0330, payload, 2)
+                self.writeRegisters(0x0330, payload)
 
         # 發送 robotCommand 到 0x0300 地址
-        self.modbusTCPClient.write_register(0x0300, robotCommand.value, 2)
+        self.writeRegister(0x0300, robotCommand.value)
         if not self.__block :#若不等待結束，則retrun
             return
 
@@ -305,14 +340,14 @@ class Robot:
         打開吸盤
         """
         self.latestDigitalOutputCommand = setBit(self.latestDigitalOutputCommand,self.suctionDigitalOutputNumber)
-        self.modbusTCPClient.write_register(0x02FE, self.latestDigitalOutputCommand, 2)
+        self.writeRegister(0x02FE, self.latestDigitalOutputCommand)
 
     def suctionOFF(self):
         """
         關閉吸盤
         """
         self.latestDigitalOutputCommand = clearBit(self.latestDigitalOutputCommand,self.suctionDigitalOutputNumber)
-        self.modbusTCPClient.write_register(0x02FE, 0, 2)
+        self.writeRegister(0x02FE, 0)
 
     def setIO(self, *args):#設定數位輸出(以二進制設定)
         """
@@ -330,14 +365,14 @@ class Robot:
         else:
             raise ValueError("參數錯誤，應傳入一個數字或一個0~16的數字及True或False")
         self.latestDigitalOutputCommand = data
-        self.modbusTCPClient.write_register(0x02FE, self.latestDigitalOutputCommand, 2)
+        self.writeRegister(0x02FE, self.latestDigitalOutputCommand)
     ##############################################################
 
     def motionStop(self):
         """
         停止所有運動
         """
-        self.modbusTCPClient.write_registers(0x0300, 0, 2)
+        self.writeRegisters(0x0300, [0])
         if self.__block:
             self.waitRobotReachTargetPosition()
 
@@ -348,15 +383,136 @@ class Robot:
         """
         啟用所有伺服軸
         """
-        self.modbusTCPClient.write_register(0x0010, int(0x0001), 2)
+        self.writeRegister(0x0006, int(0x0101))  # 1,2軸
+        self.writeRegister(0x0007, int(0x0101))  # 3,4軸
+        self.writeRegister(0x0000, int(0x0101))  # 5,6軸
 
     def AllAxisDisable(self):
         """
         禁用所有伺服軸
         """
-        self.modbusTCPClient.write_register(0x0010, int(0x0002), 2)
+        self.writeRegister(0x0006, int(0x0000))  # 1,2軸
+        self.writeRegister(0x0007, int(0x0000))  # 3,4軸
+        self.writeRegister(0x0000, int(0x0000))  # 5,6軸
 
-    def _read_register(self, address, count=1):
+    def getRobotErrorCode(self):
+        """
+        獲取機器人錯誤碼
+        """
+        return self.readRegisters(0x01FF)
+
+    def getRobotMotionState(self):
+        """
+        獲取機器人運動狀態,0表示停止,1表示運動中
+        """
+        return self.readRegisters(0x00E0)
+
+    def getRobotSystemState(self):
+        """
+        獲取機器人系統狀態,
+        0表示一般狀態,
+        2表示機器人停止，功能性暫停觸發,
+        3表示機器人運動中，但功能性暫停觸發
+        """
+        return self.readRegisters(0x0138)
+
+    def getOperationMode(self):
+        """
+        獲取操作模式狀態,
+        0表示非有線,
+        1表示T1,
+        2表示T2,
+        3表示自動模式
+        """
+        return self.readRegisters(0x0139)
+
+    def getTeachPanelState(self):
+        """
+        獲取TP教導盒啟用狀態,0表示未啟用,1表示啟用
+        """
+        return self.readRegisters(0x013B)
+
+    def getTeachPanelMode(self):
+        """
+        獲取TP教導盒模式,0表示手動模式,1表示自動模式
+        """
+        return self.readRegisters(0x013C)
+
+    def resetRobotError(self):
+        """
+        重設機器人錯誤碼
+        """
+        # 重設機器人錯誤碼
+        registers = [257] * 8  # 創建一個包含8個257的列表
+        self.writeRegisters(0x0020, registers)  # reset所有軸錯誤
+        registers = [257] * 4  
+        self.writeRegisters(0x0180, registers)  # reset系統錯誤(wireshark抓的 不知道為甚麼是4個)
+        registers = [0] * 2 
+        self.writeRegisters(0x0002, registers)  # wireshark抓的 不知道是甚麼東西
+        
+    #####################################################
+    
+    def prepareRobotForMotion(self, retryTimes=5, retryDelay=1):
+        """
+        讓機器人自動進入準備狀態，包括reset軸錯誤，並開啟伺服
+        
+        參數:
+        retryTimes: 重試次數，預設為5次
+        retryDelay: 重試延遲時間，預設為1秒
+        
+        返回:
+        bool: 如果機器人成功進入準備狀態則返回True，否則返回False
+        """
+        for _ in range(retryTimes):
+            self.resetRobotError()
+            self.AllAxisEnable()
+            
+            if self.isRobotReadyForMotion:
+                print("機器人已準備運動")
+                return True
+            else:
+                print(self.getRobotNotReadyReason())
+                time.sleep(retryDelay)
+        
+        print("機器人無法進入準備狀態")
+        return False
+    
+    ##################################################################
+    
+    def writeRegister(self, address, value, unit=2):
+        """
+        寫入單個寄存器並檢查錯誤的輔助方法。
+
+        參數:
+        address: 寄存器地址
+        value: 要寫入的值
+        unit: 單元標識符，預設為2
+
+        返回:
+        寫入操作的結果
+        """
+        result = self.modbusTCPClient.write_register(address, value, unit)
+        if result.isError():
+            raise RequestErrorException(f"寫入寄存器 {address} 失敗")
+        return result
+
+    def writeRegisters(self, address, values, unit=2):
+        """
+        寫入多個寄存器並檢查錯誤的輔助方法。
+
+        參數:
+        address: 起始寄存器地址
+        values: 要寫入的值列表
+        unit: 單元標識符，預設為2
+
+        返回:
+        寫入操作的結果
+        """
+        result = self.modbusTCPClient.write_registers(address, values, unit)
+        if result.isError():
+            raise RequestErrorException(f"寫入寄存器 {address} 失敗")
+        return result
+    def readRegisters(self, address, count=1):
         """
         讀取寄存器並檢查錯誤的輔助方法。
 
@@ -372,52 +528,3 @@ class Robot:
             raise RequestErrorException
         (f"與modbus連接對象{self.modbusTCPClient.comm_params.host}:{self.modbusTCPClient.comm_params.port}無法通訊")
         return request.registers[0]
-
-    def getRobotErrorCode(self):
-        """
-        獲取機器人錯誤碼
-        """
-        return self._read_register(0x01FF)
-
-    def getRobotMotionState(self):
-        """
-        獲取機器人運動狀態,0表示停止,1表示運動中
-        """
-        return self._read_register(0x00E0)
-
-    def getRobotSystemState(self):
-        """
-        獲取機器人系統狀態,
-        0表示一般狀態,
-        2表示機器人停止，功能性暫停觸發,
-        3表示機器人運動中，但功能性暫停觸發
-        """
-        return self._read_register(0x0138)
-
-    def getOperationMode(self):
-        """
-        獲取操作模式狀態,
-        0表示非有線,
-        1表示T1,
-        2表示T2,
-        3表示自動模式
-        """
-        return self._read_register(0x0139)
-
-    def getTeachPanelState(self):
-        """
-        獲取TP教導盒啟用狀態,0表示未啟用,1表示啟用
-        """
-        return self._read_register(0x013B)
-
-    def getTeachPanelMode(self):
-        """
-        獲取TP教導盒模式,0表示手動模式,1表示自動模式
-        """
-        return self._read_register(0x013C)
-
-    def resetRobotError(self):
-        """
-        重設機器人錯誤碼
-        """
-        self.modbusTCPClient.write_register(0x0180, 1, 2)
