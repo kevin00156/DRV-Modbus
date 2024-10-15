@@ -1,8 +1,9 @@
 from pynput import keyboard
-from pymodbus.client import ModbusTcpClient
-from functions.R_TRIG import R_TRIG
+
 from robot.classRobot import Robot
 from robot.enumRobotCommand import eRobotCommand
+from pymodbus.client import ModbusTcpClient
+from utils import R_TRIG
 
 # 初始化 Modbus TCP 連接
 host = "192.168.1.1"

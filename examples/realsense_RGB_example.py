@@ -1,6 +1,7 @@
-from realsense import realsense
+
 import cv2
 
+from realsense import realsense
 if __name__ == '__main__':
     print("init")
     # 持續讀取 RealSense 相機的 RGB 畫面

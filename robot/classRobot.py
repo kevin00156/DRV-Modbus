@@ -264,7 +264,10 @@ class Robot:
                     return
 
 
-    def sendMotionCommand(self, *args, speed=10, acceleration=10, deceleration=10, robotCommand=eRobotCommand.Motion_Stop, retry = True, retryTimes = 3, retryDelay = 1):
+    def sendMotionCommand(
+        self, *args, speed=10, acceleration=10, deceleration=10,
+        robotCommand=eRobotCommand.Motion_Stop, retry = True,
+        retryTimes = 3, retryDelay = 1):
         """
         發送機械手臂運動命令。
         
@@ -291,8 +294,8 @@ class Robot:
         self.latestMotionCommand = args#解析args為x,y,z,rx,ry,rz 順便紀錄
         x, y, z, rx, ry, rz = self.latestMotionCommand#解出剛紀錄的值
 
-        # 檢查 robotCommand 是否是 301~307 (動作命令)
-        if robotCommand not in (eRobotCommand.Robot_Go_MovP, eRobotCommand.Robot_Go_MovL, 
+        #指定不需要提供座標的命令
+        positionlessCommand = (eRobotCommand.Robot_Go_MovP, eRobotCommand.Robot_Go_MovL, 
                                 eRobotCommand.Robot_Go_MultiMoveJ, eRobotCommand.Robot_Go_MArchP, 
                                 eRobotCommand.Robot_Go_MArchL, eRobotCommand.Robot_All_Joints_Homing_To_Origin,
                                 eRobotCommand.Continue_JOG_X_Positive, eRobotCommand.Continue_JOG_X_Negative,
@@ -303,13 +306,14 @@ class Robot:
                                 eRobotCommand.Continue_JOG_RZ_Positive, eRobotCommand.Continue_JOG_RZ_Negative,
                                 eRobotCommand.Continue_JOG_External_Axis_1_Negative, eRobotCommand.Continue_JOG_External_Axis_1_Positive,
                                 eRobotCommand.Continue_JOG_External_Axis_2_Negative, eRobotCommand.Continue_JOG_External_Axis_2_Positive,
-                                eRobotCommand.Continue_JOG_External_Axis_3_Negative, eRobotCommand.Continue_JOG_External_Axis_3_Positive,
-                                ):
-            # 如果 robotCommand 不是 301~307，且 args 為 None，則拋出例外
+                                eRobotCommand.Continue_JOG_External_Axis_3_Negative, eRobotCommand.Continue_JOG_External_Axis_3_Positive)
+        # 檢查 robotCommand 是否是 301~307 (動作命令)
+        if robotCommand not in positionlessCommand:
+            # 如果 robotCommand 需要提供座標，且 args 為 None，則拋出例外
             if x is None:
                 raise AssertionError("動作命令不正確且未提供座標")
         else:
-            # 如果 robotCommand 是 301~307，且有座標數據，則發送命令
+            # 如果 robotCommand 需要提供座標，且有座標數據，則發送命令
             if x is not None:
                 # 構建 Payload
                 builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
@@ -333,7 +337,8 @@ class Robot:
         self.writeRegister(0x0300, robotCommand.value)
         if not self.__block :#若不等待結束，則retrun
             return
-
+        self.waitRobotReachTargetPosition()#卡住執行緒，直到運動完成
+        
     ##############################################################
     def suctionON(self):
         """

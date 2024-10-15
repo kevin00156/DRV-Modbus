@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from Aruco.functions import *
+from aruco.utils import *
 
 class Aruco():
     """
