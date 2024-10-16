@@ -396,9 +396,9 @@ class Robot:
                 self.writeRegisters(0x0330, payload)
 
         # 設定速度、加速度、減速度
-        print(self.writeRegister(0x0324, speed))  # 設定速度
-        print(self.writeRegister(0x030A, acceleration))  # 設定加速度
-        print(self.writeRegister(0x030C, deceleration))  # 設定減速度
+        self.writeRegister(0x0324, speed)  # 設定速度
+        self.writeRegister(0x030A, acceleration)  # 設定加速度
+        self.writeRegister(0x030C, deceleration)  # 設定減速度
         # 發送 robotCommand 到 0x0300 地址
         self.writeRegister(0x0300, robotCommand.value)
         if not self.__block :#若不等待結束，則retrun

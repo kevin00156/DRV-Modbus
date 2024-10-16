@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from drv_modbus import send
 from drv_modbus import request
 from landmark import aruco

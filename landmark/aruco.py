@@ -61,6 +61,10 @@ class Aruco():
 # 偵測 ArUco 標記並估算其位姿
 @deprecated
 def Detect_Aruco(frame, K, D, aruco_length, aruco_dict, aruco_params, is_draw_aruco = False, is_millimeter = False):
+    # 檢查 frame 是否為空
+    if frame is None or frame.size == 0:
+        raise ValueError("輸入的 frame 不能為空或無效")
+
     # 使用 OpenCV 偵測影像中的 ArUco 標記
     corners, ids, rejected = cv2.aruco.detectMarkers(frame, aruco_dict, parameters=aruco_params)
 

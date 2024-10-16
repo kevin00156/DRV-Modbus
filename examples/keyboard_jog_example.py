@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 from pynput import keyboard
 
 from robot.classRobot import Robot
@@ -17,6 +22,11 @@ else:
 robotDRV = Robot(c)
 # 讀取當前的手臂位姿
 x, y, z, rx, ry, rz = robotDRV.getTCPPose()
+
+ret = robotDRV.prepareRobotForMotion()
+if ret =    = False:
+    print("機器人無法進入準備狀態")
+    exit()
 
 #定義全局變數 用以處理Tab切換xyz<->rxyz的問題
 isTabbed=False
