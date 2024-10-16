@@ -1,8 +1,12 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
+import warnings
+from deprecated import deprecated
+warnings.warn(f"此庫{__name__} 已被棄用,請使用Aruco.functions", DeprecationWarning, stacklevel=2)
 
 # 在 3D 空間中繪製原點座標系
 # R: 旋轉矩陣, t: 平移向量, ax: 3D 繪圖座標軸, scale: 縮放比例
+@deprecated(reason="此函數已被棄用，請使用Aruco.functions.Draw_Origin")
 def Draw_Origin(R, t, ax, scale = 1):
     r0 = R[:, 0].reshape(3) * scale
     r1 = R[:, 1].reshape(3) * scale

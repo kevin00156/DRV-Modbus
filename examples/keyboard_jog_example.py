@@ -1,11 +1,10 @@
 from pynput import keyboard
-from drv_modbus import send
-from drv_modbus import request
-from pymodbus.client import ModbusTcpClient
-import time
-from functions.R_TRIG import R_TRIG
-from robot.Class_Robot import Robot
+
+from robot.classRobot import Robot
 from robot.enumRobotCommand import eRobotCommand
+from pymodbus.client import ModbusTcpClient
+from utils import R_TRIG
+
 # 初始化 Modbus TCP 連接
 host = "192.168.1.1"
 port = 502
@@ -65,6 +64,7 @@ def on_press(key):
 # 定義鍵盤釋放事件
 def on_release(key):    
     print(f"{key} released")
+    R_TRIG_tab(key == keyboard.Key.tab)
     robotDRV.motionStop()
     if key == keyboard.Key.esc:  # 按下 ESC 鍵退出
         return False

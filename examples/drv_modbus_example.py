@@ -1,8 +1,14 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import time
+
 from drv_modbus import send
 from drv_modbus import request
 from pymodbus.client import ModbusTcpClient
-import time
 
+import utils
 
 if __name__ == "__main__":
     # 建立modbus客戶端並連接到指定IP的設備
@@ -18,8 +24,10 @@ if __name__ == "__main__":
         print(f"Connected to {host}:{port}")
 
     # 定義機械手臂的home點的姿態 (x, y, z, rx, ry, rz)
-    home = [408.285, 0.0, 680.0120000000001, 178.969, -0.241, -103.145]
-
+    # 可以直接定義一個list 如[424.863, 0.328, 663.11, 178.333, -0.679, -111.784]，也可以像我這樣從csv讀取
+    home = utils.readListFromCsv("examples/datas/positions.csv")["home"]
+    #home = [424.863, 0.328, 663.11, 178.333, -0.679, -111.784]
+    
     # 移動到 home 姿態，且不等待完成
     send.Go_Position(c, home, block=False)
     print ("Go_Position send!")

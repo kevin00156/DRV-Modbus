@@ -7,46 +7,26 @@ DRV Modbus
 
 DRV Modbus 是一個基於 `pymodbus` 的 Python 庫，用於控制台達 DRV 系列機械手臂。此庫提供了一系列功能，包括讀取機械手臂的 TCP 位姿、執行移動命令、控制吸盤以及透過 ArUco 標記進行機械手臂校正。
 
-**注意：由於使用pyrealsense2庫，因此請使用Python 3.11版避免版本衝突**
-
-目錄結構
-----
-
-
-```bash
-DRV-Modbus/
-├── aruco_spawn_example.py       # ArUco 標記生成範例
-├── drv_modbus/                  # Modbus 相關模組#已棄用
-├── drv_modbus_example.py        # Modbus 控制範例
-├── find_aruco_example.py        # ArUco 標記檢測範例
-├── keyboard_jog_example.py      # 鍵盤控制機械手臂移動的範例
-├── realsense_RGB_example.py     # RealSense 相機範例
-├── warp_suction_example.py      # 吸盤控制範例
-├── README.md                    # 本說明文件
-└── robot/
-    ├── Class_Robot.py           # 機械手臂控制類別(控制機械手臂請使用此類別)
-    ├── enumRobotCommand.py      # 機械手臂控制命令表
-    └── ...
-```
+**注意：由於使用pyrealsense2庫，因此請使用Python 3.11版避免版本衝突，避免使用3.12以上版本**
 
 主要功能
 ----
 
-### 1\. 機械手臂控制
+### 1\. 機械手臂控制(./robot)
 
 透過 Modbus 協議控制台達 DRV 機械手臂的運動。
 
 -   **robot控制**: 提供一個類別，方便控制機械手臂  
 -   **warp_suction_example.py** : 子辰學長最終寫的demo，用以判斷並吸取銀板，並根據銀板顏色放置在不同位置  
 
-### 2\. ArUco 標記
+### 2\. ArUco 標記(./aruco)
 
 透過 ArUco 標記進行機械手臂的校正與標定。
 
 -   **標記生成**: 利用 `aruco_spawn_example.py` 生成 ArUco 標記圖像。  
 -   **標記檢測**: 使用 `find_aruco_example.py` 檢測攝像頭中的 ArUco 標記。  
 
-### 3\. RealSense 支持
+### 3\. RealSense 支持(./realsense)
 
 使用 Intel RealSense 相機進行影像處理與 3D 檢測。
 
@@ -82,13 +62,13 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 
 **注意：如果連這個都無法正確執行，就表示環境設定錯誤，或根本沒有連線到，請把網路線插好，ping到後再檢查是否為環境設定問題**
 
-`python drv_modbus_example.py` 
+`python examples/drv_modbus_example.py` 
 
 ### 2\. 使用鍵盤控制機械手臂
 
-運行 `keyboard_jog_example.py`，可以透過鍵盤方向鍵來控制機械手臂的移動：
+運行 `examples/keyboard_jog_example.py`，可以透過鍵盤方向鍵來控制機械手臂的移動：
 
-`python keyboard_jog_example.py` 
+`python examples/keyboard_jog_example.py` 
 
 按上箭頭，向-x方向移動
 
@@ -105,9 +85,9 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 
 ### 3\. 生成 ArUco 標記
 
-運行 `aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
+運行 `examples/aruco_spawn_example.py` 生成指定 ID 和分辨率的 ArUco 標記：
 
-`python aruco_spawn_example.py` 
+`python examples/aruco_spawn_example.py` 
 
 ### 4\. 檢測 ArUco 標記
 
@@ -121,7 +101,7 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 
 運行 `warp_suction_example.py` 控制機械手臂的吸盤動作：
 
-`python warp_suction_example.py` 
+`python examples/warp_suction_example.py`    
 
 這個功能比較複雜，是檢測aruco位置後，還要命令機械手臂移動並控制吸盤的程式  
 目前仍在研究中  
