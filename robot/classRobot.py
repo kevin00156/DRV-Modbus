@@ -3,30 +3,31 @@ from pymodbus.constants import Endian
 from pymodbus.client import ModbusTcpClient
 import time
 from robot.enumRobotCommand import eRobotCommand
+from typing import Union, Tuple, Optional, Sequence
 
 # 自訂例外
 class RequestErrorException(Exception):
-    def __init__(self, message="Request error.", errorCode=1):
+    def __init__(self, message: str = "Request error.", errorCode: int = 1):
         super().__init__(message)
         self.errorCode = errorCode
 
 ###########################################################
-def clearBit(num, *args):
+def clearBit(num: int, *args: int) -> int:
     # 創建遮罩，將第 n 位設為 0，其他位設為 1
-    if (args >0 and isinstance(args,int)):
-        operationBits = args
+    operationBits = args
     for bit in operationBits:
         mask = ~(1 << bit)
     # 對 num 進行按位 AND 操作
     return num & mask
-def setBit(num, *args):
+
+def setBit(num: int, *args: int) -> int:
     # 創建遮罩，將第 n 位設為 1，其他位保持不變
-    if (args >0 and isinstance(args,int)):
-        operationBits = args
+    operationBits = args
     for bit in operationBits:
         mask = 1 << bit
     # 對 num 進行按位 OR 操作
     return num | mask
+
 class Robot:
     """
     Robot 類別
@@ -37,24 +38,31 @@ class Robot:
     1. 移動控制: 可以控制機器人移動到指定位置或執行特定運動命令。
     2. 狀態查詢: 可以獲取機器人的當前位置、錯誤代碼、運動狀態等資訊。
     3. IO控制: 可以控制機器人的數位輸出，如吸盤的開關。
-
+    4. 系統控制，如AllAxisEnable(),AllAxisDisable(), resetRobotError()等
     使用方法:
     1. 初始化: 創建 Robot 物件時，可以提供 ModbusTcpClient 或主機地址。
     2. 移動命令: 使用 sendMotionCommand() 方法發送移動指令。
     3. 狀態檢查: 使用 getTCPPose(), getRobotErrorCode() 等方法獲取機器人狀態。
     4. IO操作: 使用 suctionON(), suctionOFF(), setIO() 等方法控制輸出。
-
+    5. 自動復歸: prepareRobotForMotion()，可自動做一次reset error->啟動所有伺服
     注意事項:
     - 使用前請確保已正確連接到機器人。
     - 操作時請注意安全，避免碰撞。
     """
-    def __init__(self, modbusTCPClient=None, host=None, port = None, motionBlock=False, motionBlockTime = 0.1, suctionDigitalOutputNumber = 0b0000000000000001):
+    def __init__(self, modbusTCPClient: Optional[ModbusTcpClient] = None, host: Optional[str] = None, port: Optional[int] = None,
+                 motionBlock: bool = False, motionBlockTime: float = 0.1, suctionDigitalOutputNumber: int = 0b0000000000000000,
+                 defaultSpeed: int = 10, defaultAcceleration: int = 10, defaultDeceleration: int = 10):
         """
         Robot 類別的建構函數
         - 如果提供 modbusTCPClient，則使用該連接
         - 如果提供 host，則會自動建立連接
         - 如果兩者都未提供，則不會自動連接
+        - 可以在初始化的時候指定預設速度、加減速度(defaultSpeed,defaultAcceleration,defaultDeceleration)
+        - 可以指定motionBlock(是否需要block)、motionBlockTime(block的時候要等多久)
+        - 可以指定吸盤的數位輸出位置(suctionDigitalOutputNumber)
         """
+        
+        #檢查input是否合法
         if modbusTCPClient:
             self.modbusTCPClient = modbusTCPClient
             if not self.modbusTCPClient.is_socket_open():
@@ -69,8 +77,11 @@ class Robot:
         self.__block = motionBlock                                              #定義所有的動作函式是否需要做block
         self.__blockTime = motionBlockTime                                      #定義在block的時候要等多久
         self.__suctionDigitalOutputNumber = suctionDigitalOutputNumber          #定義吸盤的位置(預設在DO_0)，請輸入0~15的值
-        self.__latestMotionCommand = None, None, None, None, None, None 
+        self.__latestMotionCommand: Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[float], Optional[float]] = None, None, None, None, None, None 
         self.__latestDigitalOutputCommand = 0
+        self.__defaultSpeed = defaultSpeed
+        self.__defaultAcceleration = defaultAcceleration
+        self.__defaultDeceleration = defaultDeceleration
 
     def __del__(self):
         """
@@ -81,7 +92,7 @@ class Robot:
 
     ########################################################################
     @property
-    def isRobotReachTargetPosition(self):
+    def isRobotReachTargetPosition(self) -> bool:
         """
         定義屬性getter：檢查Robot是否到達位置
         """
@@ -89,65 +100,62 @@ class Robot:
         return self.getRobotPoseFlag() == 1
      # 定義 block 的 getter 和 setter
     @property
-    def block(self):
+    def block(self) -> bool:
         """返回 block 狀態 (是否需要 block 動作)"""
         return self.__block
 
     @block.setter
-    def block(self, value):
+    def block(self, value: bool):
         """設置 block 狀態 (True 或 False)"""
-        if isinstance(value, bool):
-            self.__block = value
-        else:
-            raise ValueError("block 屬性應設為 True 或 False")
+        self.__block = value
 
     # 定義 blockTime 的 getter 和 setter
     @property
-    def blockTime(self):
+    def blockTime(self) -> float:
         """返回 blockTime 的值 (等待時間)"""
         return self.__blockTime
 
     @blockTime.setter
-    def blockTime(self, value):
+    def blockTime(self, value: float):
         """設置 blockTime 的值 (等待時間)"""
-        if isinstance(value, (int, float)) and value >= 0:
+        if value >= 0:
             self.__blockTime = value
         else:
             raise ValueError("blockTime 屬性應設為非負數值")
 
     # 定義 suctionDigitalOutputNumber 的 getter 和 setter
     @property
-    def suctionDigitalOutputNumber(self):
+    def suctionDigitalOutputNumber(self) -> int:
         """返回 suctionDigitalOutputNumber (吸盤 DO 編號)"""
         return self.__suctionDigitalOutputNumber
 
     @suctionDigitalOutputNumber.setter
-    def suctionDigitalOutputNumber(self, value):
+    def suctionDigitalOutputNumber(self, value: int):
         """設置 suctionDigitalOutputNumber (吸盤 DO 編號)"""
-        if isinstance(value, int) and value >= 0 and value<=15:
+        if 0 <= value <= 15:
             self.__suctionDigitalOutputNumber = value
         else:
-            raise ValueError("suctionDigitalOutputNumber 應設為非負整數")
+            raise ValueError("suctionDigitalOutputNumber 應設為0到15之間的整數")
         
     @property
-    def latestMotionCommand(self):
+    def latestMotionCommand(self) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[float], Optional[float]]:
         """
         讀取最近一次的運動命令，用以比較位置
         """
         return self.__latestMotionCommand
+
     @latestMotionCommand.setter
-    def latestMotionCommand(self, *args):
+    def latestMotionCommand(self, position: Union[list[float], Tuple[float, float, float, float, float, float]]):
         """
         保存最近一次的運動命令，用以比較位置
         """
         # 處理 args 輸入的不同狀況
-        if len(args) == 1 and isinstance(args[0], list) and len(args[0]) == 6:
-            # 當 args 傳入一個含有6個int的list
-            x, y, z, rx, ry, rz = args[0]
-        elif len(args) == 6:
+        if isinstance(position,list) and len(position) == 6:
+            x, y, z, rx, ry, rz = position
+        elif isinstance(position,tuple) and len(position) == 6:
             # 當 args 傳入6個獨立的座標值
-            x, y, z, rx, ry, rz = args
-        elif len(args) == 1 or args is None:
+            x, y, z, rx, ry, rz = position
+        elif position is None:
             # 當 args 為 None，不做特別處理
             x, y, z, rx, ry, rz = None, None, None, None, None, None
         else:
@@ -155,14 +163,14 @@ class Robot:
         self.__latestMotionCommand = x, y, z, rx, ry, rz
 
     @property
-    def latestDigitalOutputCommand(self):
+    def latestDigitalOutputCommand(self) -> int:
         """
         獲取最近一次的數位輸出命令
         """
         return self.__latestDigitalOutputCommand
     
     @latestDigitalOutputCommand.setter
-    def latestDigitalOutputCommand(self, value):
+    def latestDigitalOutputCommand(self, value: int):
         """
         設置最近一次的數位輸出命令
         
@@ -172,7 +180,7 @@ class Robot:
         self.__latestDigitalOutputCommand = value
 
     @property
-    def isRobotError(self):
+    def isRobotError(self) -> bool:
         """
         檢查機器人是否處於錯誤狀態
         
@@ -183,7 +191,7 @@ class Robot:
         return error_code != 0  # 假設錯誤代碼為0表示沒有錯誤
 
     @property
-    def isRobotReadyForMotion(self):
+    def isRobotReadyForMotion(self) -> bool:
         """
         檢查機器人是否處於可以運動的狀態
         
@@ -193,8 +201,58 @@ class Robot:
         return (not self.isRobotError and #self.isRobotReachTargetPosition and 
                 self.getTeachPanelMode()==0  and
                 self.getRobotSystemState()==0)
+    @property
+    def defaultSpeed(self) -> int:
+        """
+        獲取機器人的預設速度
+        """
+        return self.__defaultSpeed
+
+    @defaultSpeed.setter
+    def defaultSpeed(self, value: int):
+        """
+        設置機器人的預設速度
         
-    def getRobotNotReadyReason(self):
+        參數:
+        value: 要設置的預設速度值
+        """
+        self.__defaultSpeed = value
+
+    @property
+    def defaultAcceleration(self) -> int:
+        """
+        獲取機器人的預設加速度
+        """
+        return self.__defaultAcceleration
+
+    @defaultAcceleration.setter
+    def defaultAcceleration(self, value: int):
+        """
+        設置機器人的預設加速度
+        
+        參數:
+        value: 要設置的預設加速度值
+        """
+        self.__defaultAcceleration = value
+
+    @property
+    def defaultDeceleration(self) -> int:
+        """
+        獲取機器人的預設減速度
+        """
+        return self.__defaultDeceleration
+
+    @defaultDeceleration.setter
+    def defaultDeceleration(self, value: int):
+        """
+        設置機器人的預設減速度
+        
+        參數:
+        value: 要設置的預設減速度值
+        """
+        self.__defaultDeceleration = value
+
+    def getRobotNotReadyReason(self) -> str:
         """
         檢查機器人未準備運動的原因
         檢查項目：
@@ -217,7 +275,7 @@ class Robot:
             reason += "機器人系統狀態: " + str(self.getRobotSystemState()) + "\n"
         return reason
     ########################################################################
-    def getTCPPose(self):
+    def getTCPPose(self) -> Tuple[float, float, float, float, float, float]:
         """
         從機械手臂讀取 TCP 位姿 (X, Y, Z, Rx, Ry, Rz)
         """
@@ -237,7 +295,7 @@ class Robot:
 
         return x, y, z, rx, ry, rz
 
-    def getRobotPoseFlag(self):
+    def getRobotPoseFlag(self) -> int:
         """
         獲取當前機械手臂的位姿狀態標誌
         return 1 表示到達位置，2表示未到達位置
@@ -265,14 +323,19 @@ class Robot:
 
 
     def sendMotionCommand(
-        self, *args, speed=10, acceleration=10, deceleration=10,
-        robotCommand=eRobotCommand.Motion_Stop, retry = True,
-        retryTimes = 3, retryDelay = 1):
+        self, 
+        position: Optional[Union[list[float], tuple[float, float, float, float, float, float]]] = None,
+        speed: Optional[int] = None,
+        acceleration: Optional[int] = None,
+        deceleration: Optional[int] = None,
+        robotCommand: eRobotCommand = eRobotCommand.Motion_Stop,
+        retry: bool = True,
+        retryTimes: int = 3,
+        retryDelay: int = 1
+    ) -> None:
         """
-        發送機械手臂運動命令。
-        
         參數:
-            args: 可以是6個獨立的座標值(x, y, z, rx, ry, rz)或一個包含6個值的list。
+            position: 可以是6個獨立的座標值(x, y, z, rx, ry, rz)或一個包含6個值的list。
             speed: 移動速度 (預設為10)。
             acceleration: 加速度 (預設為10)。
             deceleration: 減速度 (預設為10)。
@@ -291,13 +354,17 @@ class Robot:
         if not self.isRobotReadyForMotion:
             print("機器人不允許運動")
             return
-        self.latestMotionCommand = args#解析args為x,y,z,rx,ry,rz 順便紀錄
+        self.latestMotionCommand = position#解析args為x,y,z,rx,ry,rz 順便紀錄
         x, y, z, rx, ry, rz = self.latestMotionCommand#解出剛紀錄的值
 
+        if speed is None:
+            speed = self.defaultSpeed
+        if acceleration is None:
+            acceleration = self.defaultAcceleration
+        if deceleration is None:
+            deceleration = self.defaultDeceleration
         #指定不需要提供座標的命令
-        positionlessCommand = (eRobotCommand.Robot_Go_MovP, eRobotCommand.Robot_Go_MovL, 
-                                eRobotCommand.Robot_Go_MultiMoveJ, eRobotCommand.Robot_Go_MArchP, 
-                                eRobotCommand.Robot_Go_MArchL, eRobotCommand.Robot_All_Joints_Homing_To_Origin,
+        positionlessCommand = ( eRobotCommand.Robot_All_Joints_Homing_To_Origin,
                                 eRobotCommand.Continue_JOG_X_Positive, eRobotCommand.Continue_JOG_X_Negative,
                                 eRobotCommand.Continue_JOG_Y_Positive, eRobotCommand.Continue_JOG_Y_Negative,
                                 eRobotCommand.Continue_JOG_Z_Positive, eRobotCommand.Continue_JOG_Z_Negative,
@@ -325,14 +392,13 @@ class Robot:
                 builder.add_32bit_int(int(rz * 1000))
                 payload = builder.to_registers()
 
-                # 設定速度、加速度、減速度
-                self.writeRegister(0x0324, speed)  # 設定速度
-                self.writeRegister(0x030A, acceleration)  # 設定加速度
-                self.writeRegister(0x030C, deceleration)  # 設定減速度
-
                 # 發送位姿命令到 0x0330 地址
                 self.writeRegisters(0x0330, payload)
 
+        # 設定速度、加速度、減速度
+        print(self.writeRegister(0x0324, speed))  # 設定速度
+        print(self.writeRegister(0x030A, acceleration))  # 設定加速度
+        print(self.writeRegister(0x030C, deceleration))  # 設定減速度
         # 發送 robotCommand 到 0x0300 地址
         self.writeRegister(0x0300, robotCommand.value)
         if not self.__block :#若不等待結束，則retrun
@@ -391,7 +457,8 @@ class Robot:
         self.writeRegister(0x0006, int(0x0101))  # 1,2軸
         self.writeRegister(0x0007, int(0x0101))  # 3,4軸
         self.writeRegister(0x0000, int(0x0101))  # 5,6軸
-
+        time.sleep(2)#等待使能的時間
+        
     def AllAxisDisable(self):
         """
         禁用所有伺服軸
@@ -457,7 +524,7 @@ class Robot:
         
     #####################################################
     
-    def prepareRobotForMotion(self, retryTimes=5, retryDelay=1):
+    def prepareRobotForMotion(self, retryTimes: int = 5, retryDelay: float = 1) -> bool:
         """
         讓機器人自動進入準備狀態，包括reset軸錯誤，並開啟伺服
         
@@ -484,7 +551,7 @@ class Robot:
     
     ##################################################################
     
-    def writeRegister(self, address, value, unit=2):
+    def writeRegister(self, address: int, value: int, unit: int = 2):
         """
         寫入單個寄存器並檢查錯誤的輔助方法。
 
@@ -501,7 +568,7 @@ class Robot:
             raise RequestErrorException(f"寫入寄存器 {address} 失敗")
         return result
 
-    def writeRegisters(self, address, values, unit=2):
+    def writeRegisters(self, address: int, values: list[int], unit: int = 2):
         """
         寫入多個寄存器並檢查錯誤的輔助方法。
 
@@ -517,7 +584,8 @@ class Robot:
         if result.isError():
             raise RequestErrorException(f"寫入寄存器 {address} 失敗")
         return result
-    def readRegisters(self, address, count=1):
+
+    def readRegisters(self, address: int, count: int = 1) -> int:
         """
         讀取寄存器並檢查錯誤的輔助方法。
 
@@ -530,6 +598,5 @@ class Robot:
         """
         request = self.modbusTCPClient.read_holding_registers(address, count, 2)
         if request.isError():
-            raise RequestErrorException
-        (f"與modbus連接對象{self.modbusTCPClient.comm_params.host}:{self.modbusTCPClient.comm_params.port}無法通訊")
+            raise RequestErrorException(f"與modbus連接對象{self.modbusTCPClient.comm_params.host}:{self.modbusTCPClient.comm_params.port}無法通訊")
         return request.registers[0]

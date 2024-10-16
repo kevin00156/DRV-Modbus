@@ -1,2 +1,2 @@
 from .R_TRIG import *
-from .csvListUtils import readListFromCsv, writeListToCsv
+from .csvListUtils import readListFromCsv, writeListToCsv, appendListToCsv

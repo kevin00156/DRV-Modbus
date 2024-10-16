@@ -4,8 +4,10 @@ from scipy.spatial.transform import Rotation
 def drawOrigin(rotationMatrix, translationVector, ax, scale = 1):
     """
     在 3D 空間中繪製原點座標系
-    rotationMatrix: 旋轉矩陣, translationVector: 平移向量,
-    ax: 3D 繪圖座標軸, scale: 縮放比例
+    rotationMatrix: 旋轉矩陣
+    translationVector: 平移向量
+    ax: 3D 繪圖座標軸
+    scale: 縮放比例
     """
     r0 = rotationMatrix[:, 0].reshape(3) * scale
     r1 = rotationMatrix[:, 1].reshape(3) * scale
@@ -19,8 +21,12 @@ def drawOrigin(rotationMatrix, translationVector, ax, scale = 1):
 def drawCamera(cameraMatrix, rotationMatrix, translationVector, camText, ax, focalLength=1):
     """
     在 3D 空間中繪製相機的坐標系
-    cameraMatrix: 相機內部參數矩陣, rotationMatrix: 旋轉矩陣, translationVector: 平移向量,
-    camText: 相機標籤文字, ax: 3D 繪圖座標軸, focalLength: 焦距
+    cameraMatrix: 相機內部參數矩陣
+    rotationMatrix: 旋轉矩陣
+    translationVector: 平移向量
+    camText: 相機標籤文字
+    ax: 3D 繪圖座標軸
+    focalLength: 焦距
 
     """
     ax.text(translationVector[0][0], translationVector[1][0], translationVector[2][0], camText) # 在相機位置標示文字
@@ -75,7 +81,8 @@ def drawCamera(cameraMatrix, rotationMatrix, translationVector, camText, ax, foc
 def combineRotationAndTranslationToHomogeneousMatrix(rotationMatrix, translationVector):
     """
     將旋轉矩陣和位移向量組合成 4x4 齊次變換矩陣
-    rotationMatrix: 旋轉矩陣, translationVector: 位移向量
+    rotationMatrix: 旋轉矩陣
+    translationVector: 位移向量
     return: 4x4 齊次變換矩陣
     """
     transformationMatrix = np.hstack((rotationMatrix, translationVector)) # 將旋轉矩陣和位移向量水平拼接
@@ -183,7 +190,8 @@ def tRxAdvence(transformationMatrix, rxOffset):
 def tRyAdvence(transformationMatrix, ryOffset):
     """
     沿著 Y 軸推進變換矩陣 T
-    transformationMatrix: 齊次變換矩陣, ryOffset: 沿 Y 軸的位移
+    transformationMatrix: 齊次變換矩陣
+    ryOffset: 沿 Y 軸的位移
     """
     resultTransformationMatrix = transformationMatrix
     rotationMatrix = resultTransformationMatrix[:3, :3]
@@ -194,7 +202,8 @@ def tRyAdvence(transformationMatrix, ryOffset):
 def tRzAdvence(transformationMatrix, rzOffset):
     """
     沿著 Z 軸推進變換矩陣 T
-    transformationMatrix: 齊次變換矩陣, rzOffset: 沿 Z 軸的位移
+    transformationMatrix: 齊次變換矩陣
+    rzOffset: 沿 Z 軸的位移
     """
     resultTransformationMatrix = transformationMatrix.copy()
     rotationMatrix = resultTransformationMatrix[:3, :3]
@@ -224,7 +233,10 @@ def rotationMatrix(x, y, z):
 def depthToPointCloud(cameraMatrix, depthImg, minDist = 0, maxDist = 2):
     """
     將深度圖轉換成點雲數據
-    cameraMatrix: 相機內部參數矩陣, depthImg: 深度圖, minDist: 最小距離閾值, maxDist: 最大距離閾值
+    cameraMatrix: 相機內部參數矩陣
+    depthImg: 深度圖
+    minDist: 最小距離閾值
+    maxDist: 最大距離閾值
     """
     cameraMatrixInv = np.linalg.inv(cameraMatrix) # 計算相機內部參數矩陣的逆矩陣
     pointCloud = [] # 用於存儲點雲的空列表

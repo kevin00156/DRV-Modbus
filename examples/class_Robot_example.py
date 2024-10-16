@@ -1,6 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 import time
 
-from robot.classRobot import Robot
+from robot import Robot
 from pymodbus.client import ModbusTcpClient
 import robot
 import utils
@@ -11,28 +16,28 @@ if __name__   == "__main__":
     port = 502
     modbusTCPClient = ModbusTcpClient(host= host,port=port)
     
-    robotDRV = Robot(modbusTCPClient)
+    robotDRV = Robot(modbusTCPClient,defaultSpeed=50,defaultAcceleration=10,defaultDeceleration=10)#可以在初始化的時候指定預設速度、加減速度
+    #robotDRV.defaultSpeed = 100#也可以在初始化後再指定
+    #robotDRV.defaultAcceleration = 80
+    #robotDRV.defaultDeceleration = 80
     
     ret = robotDRV.prepareRobotForMotion()
     if ret == False:
         print("機器人無法進入準備狀態")
         exit()
     
-        
     robotDRV.sendMotionCommand(
-        robotCommand=robot.eRobotCommand.Robot_All_Joints_Homing_To_Origin,
-        speed=100,acceleration=100,deceleration=100)#測試回home功能
-
+        robotCommand=robot.eRobotCommand.Robot_All_Joints_Homing_To_Origin)#測試回home功能
     while True:
         print(robotDRV.getTCPPose())
         if robotDRV.isRobotReachTargetPosition :
             break
-    
-    
-    home = utils.readListFromCsv("examples/datas/positions.csv")["home"]
+        time.sleep(0.1)
+        
+    readyPosition = utils.readListFromCsv("examples/datas/positions.csv")["readyPosition"]
     #home = [424.863, 0.328, 663.11, 178.333, -0.679, -111.784]
 
-    robotDRV.sendMotionCommand(home,speed=50,acceleration=100,deceleration=100,
+    robotDRV.sendMotionCommand(position=readyPosition,speed=100,acceleration=100,deceleration=100,#也可以在call函數的時候再指定速度
                                robotCommand=robot.eRobotCommand.Robot_Go_MovP)
 
     #send.Go_Position(modbusTCPClient,home,20)
@@ -40,6 +45,7 @@ if __name__   == "__main__":
         print(robotDRV.getTCPPose())
         if robotDRV.isRobotReachTargetPosition :
             break
+        time.sleep(0.1)
     
     robotDRV.suctionON()
     time.sleep(2)

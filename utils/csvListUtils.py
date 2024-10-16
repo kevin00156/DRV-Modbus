@@ -1,14 +1,14 @@
 import csv
 import ast
+from typing import Sequence
 """
 這是以List做讀寫csv，並以List管理數據的功能
 """
 
-def writeListToCsv(data, filePath):
-    ret = False
-    if not data or not isinstance(data, dict):
-        return ret
-
+def writeListToCsv(data : dict[str, Sequence], filePath : str):
+    if not data or not filePath:
+        return False
+    
     with open(filePath, 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         writer.writerow(["key", "value"])  # 寫入標題行
@@ -16,11 +16,20 @@ def writeListToCsv(data, filePath):
         for key, value in data.items():
             writer.writerow([key, str(value)])
 
-    ret = True
-    return ret
+    return True
 
+def appendListToCsv(data : tuple[str, Sequence], filePath : str):
+    if (not data or not filePath):
+        return False
+    
+    key, value = data
+    with open(filePath, 'a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow([key, str(value)])
 
-def readListFromCsv(filePath):
+    return True
+
+def readListFromCsv(filePath: str):
     data = {}
     
     with open(filePath, 'r', newline='', encoding='utf-8') as file:
@@ -58,4 +67,8 @@ if __name__ == "__main__":
     print("讀取的數據：")
     for key, value in read_data.items():
         print(f"{key}: {value}")
+
+    #增加數據
+    appendListToCsv(["key4", [1, 2, 3, 4]], "test_output.csv")
+    appendListToCsv(("key4", [1, 2, 3, 4]), "test_output.csv")
 """

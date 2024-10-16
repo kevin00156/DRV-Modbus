@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
 
@@ -22,7 +25,7 @@ if __name__ == "__main__":
 
     # 定義機械手臂的home點的姿態 (x, y, z, rx, ry, rz)
     # 可以直接定義一個list 如[424.863, 0.328, 663.11, 178.333, -0.679, -111.784]，也可以像我這樣從csv讀取
-    home = utils.readPositionsFromCsv("examples/datas/positions.csv")["home"]
+    home = utils.readListFromCsv("examples/datas/positions.csv")["home"]
     #home = [424.863, 0.328, 663.11, 178.333, -0.679, -111.784]
     
     # 移動到 home 姿態，且不等待完成
