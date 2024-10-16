@@ -17,7 +17,7 @@ DRV Modbus 是一個基於 `pymodbus` 的 Python 庫，用於控制台達 DRV �
 透過 Modbus 協議控制台達 DRV 機械手臂的運動。
 
 -   **robot控制**: 提供一個類別，方便控制機械手臂  
--   **warp_suction_example.py** : 子辰學長最終寫的demo，用以判斷並吸取銀板，並根據銀板顏色放置在不同位置  
+-   **warp_suction_example.py** : 子程學長最終寫的demo，用以判斷並吸取銀板，並根據銀板顏色放置在不同位置  
 
 ### 2\. ArUco 標記(./aruco)
 
