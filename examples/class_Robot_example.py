@@ -12,11 +12,20 @@ import utils
 
 if __name__   == "__main__":
     
-    host = "192.168.1.1"
-    port = 502
+    parameters = utils.readListFromCsv("examples/datas/parameters.csv")
+    
+    host = parameters["host"]
+    port = parameters["port"]
     modbusTCPClient = ModbusTcpClient(host= host,port=port)
     
-    robotDRV = Robot(modbusTCPClient,defaultSpeed=50,defaultAcceleration=10,defaultDeceleration=10)#可以在初始化的時候指定預設速度、加減速度
+    defaultSpeed = int(parameters["defaultSpeed"])
+    defaultAcceleration = int(parameters["defaultAcceleration"])
+    defaultDeceleration = int(parameters["defaultDeceleration"])
+    
+    
+    robotDRV = Robot(modbusTCPClient,defaultSpeed=defaultSpeed,
+                     defaultAcceleration=defaultAcceleration,
+                     defaultDeceleration=defaultDeceleration)#可以在初始化的時候指定預設速度、加減速度
     #robotDRV.defaultSpeed = 100#也可以在初始化後再指定
     #robotDRV.defaultAcceleration = 80
     #robotDRV.defaultDeceleration = 80
@@ -34,7 +43,7 @@ if __name__   == "__main__":
             break
         time.sleep(0.1)
         
-    readyPosition = utils.readListFromCsv("examples/datas/positions.csv")["readyPosition"]
+    readyPosition = utils.readListFromCsv("examples/datas/parameters.csv")["readyPosition"]
     #home = [424.863, 0.328, 663.11, 178.333, -0.679, -111.784]
 
     robotDRV.sendMotionCommand(position=readyPosition,speed=100,acceleration=100,deceleration=100,#也可以在call函數的時候再指定速度
