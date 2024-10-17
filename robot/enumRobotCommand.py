@@ -113,4 +113,4 @@ class eRobotCommand(Enum):
     External_Axis_6_Goto = 321
     
     # (1000: Motion Stop)
-    Motion_Stop = 1000
+    Motion_Stop = 0

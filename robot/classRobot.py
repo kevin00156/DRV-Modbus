@@ -365,6 +365,7 @@ class Robot:
             deceleration = self.defaultDeceleration
         #指定不需要提供座標的命令
         positionlessCommand = ( eRobotCommand.Robot_All_Joints_Homing_To_Origin,
+                                eRobotCommand.Motion_Stop,
                                 eRobotCommand.Continue_JOG_X_Positive, eRobotCommand.Continue_JOG_X_Negative,
                                 eRobotCommand.Continue_JOG_Y_Positive, eRobotCommand.Continue_JOG_Y_Negative,
                                 eRobotCommand.Continue_JOG_Z_Positive, eRobotCommand.Continue_JOG_Z_Negative,
