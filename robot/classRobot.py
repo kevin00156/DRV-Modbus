@@ -188,7 +188,7 @@ class Robot:
         bool: 如果機器人有錯誤則返回True，否則返回False
         """
         error_code = self.getRobotErrorCode()
-        return error_code != 0  # 假設錯誤代碼為0表示沒有錯誤
+        return error_code != (0,0,[0,0,0,0,0,0])  # 假設錯誤代碼為0表示沒有錯誤
 
     @property
     def isRobotReadyForMotion(self) -> bool:
@@ -199,7 +199,7 @@ class Robot:
         bool: 如果機器人可以運動則返回True，否則返回False
         """
         return (not self.isRobotError and #self.isRobotReachTargetPosition and 
-                self.getTeachPanelMode()==0  and
+                self.getTeachPanelState()==0  and
                 self.getRobotSystemState()==0)
     @property
     def speed(self) -> int:
@@ -273,23 +273,28 @@ class Robot:
         """
         檢查機器人未準備運動的原因
         檢查項目：
-        1. 機器人錯誤碼
+        1. 機器人錯誤碼(包含controllerError, robotGroupError, jointsError)
         #2. 機器人未到達位置
         3. 教導盒未釋放控制權
         #4. 運行模式，非自動模式
-        5. 機器人系統狀態
+        #5. 機器人系統狀態
         返回:
         string: 機器人未準備運動的原因
         """
         reason = ""
-        if self.getRobotErrorCode() != 0:
-            reason += "機器人錯誤碼: " +self.getRobotErrorCode() + "\n"
+        controllerError,robotGroupError,jointsError = self.getRobotErrorCode()
+        if controllerError != 0:
+            reason += "控制器錯誤碼: " +str(controllerError) + "\n"
+        if robotGroupError != 0:
+            reason += "機器人組錯誤碼: " +str(robotGroupError) + "\n"
+        if jointsError != [0,0,0,0,0,0]:
+            reason += "軸錯誤碼: " +str(jointsError) + "\n"
         #if not self.isRobotReachTargetPosition:
         #    reason += "機器人未到達位置" + "\n"
-        if self.getTeachPanelMode() !=0 :
+        if self.getTeachPanelState() !=0 :
             reason += "教導盒未釋放控制權" + "\n"
-        if self.getRobotSystemState() != 0:
-            reason += "機器人系統狀態: " + str(self.getRobotSystemState()) + "\n"
+        #if self.getRobotSystemState() != 0:
+        #    reason += "機器人系統狀態: " + str(self.getRobotSystemState()) + "\n"
         return reason
     ########################################################################
     def getTCPPose(self) -> Tuple[float, float, float, float, float, float]:
@@ -483,8 +488,24 @@ class Robot:
     def getRobotErrorCode(self):
         """
         獲取機器人錯誤碼
+        return:
+        tuple(int,int,list[int]): 控制器錯誤碼,機器人組錯誤碼,軸錯誤碼(J1~J6)
         """
-        return self.readRegisters(0x01FF)
+        controllerError:int = self.readRegisters(0x01FF)
+        robotGroupError:int = self.readRegisters(0x01E0)
+        jointsError:list[int] = self.readRegisters(0x0140,16)
+        print(jointsError)
+        jointsError = jointsError[-4:]+jointsError[:2]
+        
+        return controllerError,robotGroupError,jointsError
+    
+    def getRobotWarningCode(self):
+        """
+        獲取機器人警告碼
+        return:
+        
+        """
+        return self.readRegisters(0x020E)
 
     def getRobotMotionState(self):
         """
@@ -505,23 +526,17 @@ class Robot:
         """
         獲取操作模式狀態,
         0表示非有線,
-        1表示T1,
-        2表示T2,
-        3表示自動模式
+        1表示T1(速度限制25%，可手自動),
+        2表示T2(不限制速度，可手自動),
+        3表示自動模式(不限制速度，不可手動)
         """
         return self.readRegisters(0x0139)
 
     def getTeachPanelState(self):
         """
-        獲取TP教導盒啟用狀態,0表示未啟用,1表示啟用
+        獲取TP教導盒啟用狀態,0表示未啟用,1表示啟用 (教導盒啟用時 遠端無法操作機器人)
         """
         return self.readRegisters(0x013B)
-
-    def getTeachPanelMode(self):
-        """
-        獲取TP教導盒模式,0表示手動模式,1表示自動模式
-        """
-        return self.readRegisters(0x013C)
 
     def resetRobotError(self):
         """
@@ -598,7 +613,7 @@ class Robot:
             raise RequestErrorException(f"寫入寄存器 {address} 失敗")
         return result
 
-    def readRegisters(self, address: int, count: int = 1) -> int:
+    def readRegisters(self, address: int, count: int = 1) -> list[int] | int:
         """
         讀取寄存器並檢查錯誤的輔助方法。
 
@@ -607,9 +622,10 @@ class Robot:
         count: 讀取的寄存器數量
 
         返回:
-        寄存器的值
+        list[int]: 寄存器的值(當數量>1時)
+        int: 寄存器的值(當數量=1時)
         """
         request = self.modbusTCPClient.read_holding_registers(address, count, 2)
         if request.isError():
             raise RequestErrorException(f"與modbus連接對象{self.modbusTCPClient.comm_params.host}:{self.modbusTCPClient.comm_params.port}無法通訊")
-        return request.registers[0]
+        return request.registers if count > 1 else request.registers[0]
