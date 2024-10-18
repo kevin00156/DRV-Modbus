@@ -1,7 +1,9 @@
 key,value
 host, "192.168.1.1"
 port, "502"
-defaultSpeed, "30"
+defaultSpeed, "100"
 defaultAcceleration, "100"
 defaultDeceleration, "100"
 readyPosition,"[424.863, 0.328, 663.11, 178.333, -0.679, -111.784]"
+workPosition,"[424.863, 6.5680000000000005, 538.236, 178.333, -0.679, -111.784]"
+workPosition2,"[424.863, -298.637, 602.202, -148.388, 11.827, -108.43900000000001]"

@@ -79,9 +79,9 @@ class Robot:
         self.__suctionDigitalOutputNumber = suctionDigitalOutputNumber          #定義吸盤的位置(預設在DO_0)，請輸入0~15的值
         self.__latestMotionCommand: Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[float], Optional[float]] = None, None, None, None, None, None 
         self.__latestDigitalOutputCommand = 0
-        self.__defaultSpeed = defaultSpeed
-        self.__defaultAcceleration = defaultAcceleration
-        self.__defaultDeceleration = defaultDeceleration
+        self.__speed = defaultSpeed
+        self.__acceleration = defaultAcceleration
+        self.__deceleration = defaultDeceleration
 
     def __del__(self):
         """
@@ -202,55 +202,72 @@ class Robot:
                 self.getTeachPanelMode()==0  and
                 self.getRobotSystemState()==0)
     @property
-    def defaultSpeed(self) -> int:
+    def speed(self) -> int:
         """
         獲取機器人的預設速度
         """
-        return self.__defaultSpeed
+        return self.__speed
 
-    @defaultSpeed.setter
-    def defaultSpeed(self, value: int):
+    @speed.setter
+    def speed(self, value: int):
         """
         設置機器人的預設速度
         
         參數:
         value: 要設置的預設速度值
         """
-        self.__defaultSpeed = value
+        if value < 0:
+            raise ValueError("速度不能小於0")
+        if value > 100:
+            raise ValueError("速度不能大於100")
+        self.__speed = value
+        
+        # 設定速度、加速度、減速度
+        self.writeRegister(0x0324, value)  # 設定速度
 
     @property
-    def defaultAcceleration(self) -> int:
+    def acceleration(self) -> int:
         """
         獲取機器人的預設加速度
         """
-        return self.__defaultAcceleration
+        return self.__acceleration
 
-    @defaultAcceleration.setter
-    def defaultAcceleration(self, value: int):
+    @acceleration.setter
+    def acceleration(self, value: int):
         """
         設置機器人的預設加速度
         
         參數:
         value: 要設置的預設加速度值
         """
-        self.__defaultAcceleration = value
+        if value < 0:
+            raise ValueError("加速度不能小於0")
+        if value > 100:
+            raise ValueError("加速度不能大於100")
+        self.__acceleration = value
+        self.writeRegister(0x030A, value)  # 設定加速度
 
     @property
-    def defaultDeceleration(self) -> int:
+    def deceleration(self) -> int:
         """
         獲取機器人的預設減速度
         """
-        return self.__defaultDeceleration
+        return self.__deceleration
 
-    @defaultDeceleration.setter
-    def defaultDeceleration(self, value: int):
+    @deceleration.setter
+    def deceleration(self, value: int):
         """
         設置機器人的預設減速度
         
         參數:
         value: 要設置的預設減速度值
         """
-        self.__defaultDeceleration = value
+        if value < 0:
+            raise ValueError("減速度不能小於0")
+        if value > 100:
+            raise ValueError("減速度不能大於100")
+        self.__deceleration = value
+        self.writeRegister(0x030C, value)  # 設定減速度
 
     def getRobotNotReadyReason(self) -> str:
         """
@@ -354,15 +371,13 @@ class Robot:
         if not self.isRobotReadyForMotion:
             print("機器人不允許運動")
             return
-        self.latestMotionCommand = position#解析args為x,y,z,rx,ry,rz 順便紀錄
-        x, y, z, rx, ry, rz = self.latestMotionCommand#解出剛紀錄的值
 
         if speed is None:
-            speed = self.defaultSpeed
+            speed = self.speed
         if acceleration is None:
-            acceleration = self.defaultAcceleration
+            acceleration = self.acceleration
         if deceleration is None:
-            deceleration = self.defaultDeceleration
+            deceleration = self.deceleration
         #指定不需要提供座標的命令
         positionlessCommand = ( eRobotCommand.Robot_All_Joints_Homing_To_Origin,
                                 eRobotCommand.Motion_Stop,
@@ -378,11 +393,12 @@ class Robot:
         # 檢查 robotCommand 是否是 301~307 (動作命令)
         if robotCommand not in positionlessCommand:
             # 如果 robotCommand 需要提供座標，且 args 為 None，則拋出例外
-            if x is None:
+            if position is None:
                 raise AssertionError("動作命令不正確且未提供座標")
-        else:
-            # 如果 robotCommand 需要提供座標，且有座標數據，則發送命令
-            if x is not None:
+            else:
+                # 如果 robotCommand 需要提供座標，且有座標數據，則發送命令
+                self.latestMotionCommand = position#解析args為x,y,z,rx,ry,rz 順便紀錄
+                x, y, z, rx, ry, rz = self.latestMotionCommand#解出剛紀錄的值
                 # 構建 Payload
                 builder = BinaryPayloadBuilder(byteorder=Endian.BIG, wordorder=Endian.LITTLE)
                 builder.add_32bit_int(int(x * 1000))
@@ -396,10 +412,6 @@ class Robot:
                 # 發送位姿命令到 0x0330 地址
                 self.writeRegisters(0x0330, payload)
 
-        # 設定速度、加速度、減速度
-        self.writeRegister(0x0324, speed)  # 設定速度
-        self.writeRegister(0x030A, acceleration)  # 設定加速度
-        self.writeRegister(0x030C, deceleration)  # 設定減速度
         # 發送 robotCommand 到 0x0300 地址
         self.writeRegister(0x0300, robotCommand.value)
         if not self.__block :#若不等待結束，則retrun
