@@ -72,8 +72,6 @@ class Robot:
                  motionBlock: bool = False, motionBlockTime: float = 0.1, suctionDigitalOutputNumber: int = 0b0000000000000000,
                  defaultSpeed: int = 10, defaultAcceleration: int = 10, defaultDeceleration: int = 10,
                  errorMonitorThreadSleepTime: float = 0.5):
-                 defaultSpeed: int = 10, defaultAcceleration: int = 10, defaultDeceleration: int = 10,
-                 errorMonitorThreadSleepTime: float = 0.5):
         """
         Robot 類別的建構函數
         - 如果提供 modbusTCPClient，則使用該連接
@@ -103,9 +101,9 @@ class Robot:
         self.__suctionDigitalOutputNumber = suctionDigitalOutputNumber          #定義吸盤的位置(預設在DO_0)，請輸入0~15的值
         self.__latestMotionCommand: Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[float], Optional[float]] = None, None, None, None, None, None 
         self.__latestDigitalOutputCommand = 0
-        self.__speed = defaultSpeed
-        self.__acceleration = defaultAcceleration
-        self.__deceleration = defaultDeceleration
+        self.speed = defaultSpeed
+        self.acceleration = defaultAcceleration
+        self.deceleration = defaultDeceleration
         
         self.errorMonitorThread = threading.Thread(target=self.__monitorErrors)
         self.errorMonitorThread.daemon = True  # 設置為守護執行緒
@@ -415,11 +413,11 @@ class Robot:
             print("機器人不允許運動")
             return
 
-        if speed is None:
+        if speed is not None:
             speed = self.speed
-        if acceleration is None:
+        if acceleration is not None:
             acceleration = self.acceleration
-        if deceleration is None:
+        if deceleration is not None:
             deceleration = self.deceleration
         #指定不需要提供座標的命令
         positionlessCommand = ( eRobotCommand.Robot_All_Joints_Homing_To_Origin,

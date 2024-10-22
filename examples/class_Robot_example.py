@@ -48,7 +48,7 @@ if __name__   == "__main__":
         readyPosition = utils.readListFromCsv("examples/datas/parameters.csv")["readyPosition"]
         #home = [424.863, 0.328, 663.11, 178.333, -0.679, -111.784]
 
-        robotDRV.sendMotionCommand(position=readyPosition,speed=150,acceleration=100,deceleration=100,#也可以在call函數的時候再指定速度
+        robotDRV.sendMotionCommand(position=readyPosition,speed=100,acceleration=100,deceleration=100,#也可以在call函數的時候再指定速度
                                 robotCommand=robot.eRobotCommand.Robot_Go_MovP)
 
         #send.Go_Position(modbusTCPClient,home,20)
@@ -64,9 +64,9 @@ if __name__   == "__main__":
         robotDRV.block=True
         workPosition = parameters["workPosition"]
         workPosition2 = parameters["workPosition2"]
-        robotDRV.sendMotionCommand(position=workPosition,speed=200,acceleration=100,deceleration=100,
+        robotDRV.sendMotionCommand(position=workPosition,speed=100,acceleration=100,deceleration=100,
                                 robotCommand=robot.eRobotCommand.Robot_Go_MovP)
-        robotDRV.sendMotionCommand(position=workPosition2,speed=200,acceleration=100,deceleration=100,#也可以在call函數的時候再指定速度
+        robotDRV.sendMotionCommand(position=workPosition2,speed=100,acceleration=100,deceleration=100,#也可以在call函數的時候再指定速度
                                 robotCommand=robot.eRobotCommand.Robot_Go_MovP)
         
         
