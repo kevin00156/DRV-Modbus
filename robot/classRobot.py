@@ -3,14 +3,25 @@ import time
 import threading
 from typing import Union, Tuple, Optional, Sequence, Callable
 
+
+import time
+import threading
+from typing import Union, Tuple, Optional, Sequence, Callable
+
 from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
 from pymodbus.client import ModbusTcpClient
+
 
 from robot.enumRobotCommand import eRobotCommand
 # 自訂例外
 class RequestErrorException(Exception):
     def __init__(self, message: str = "Request error.", errorCode: int = 1):
+        super().__init__(message)
+        self.errorCode = errorCode
+
+class RobotErrorException(Exception):
+    def __init__(self, message: str = "Robot error.", errorCode : int = 1):
         super().__init__(message)
         self.errorCode = errorCode
 
@@ -61,6 +72,8 @@ class Robot:
                  motionBlock: bool = False, motionBlockTime: float = 0.1, suctionDigitalOutputNumber: int = 0b0000000000000000,
                  defaultSpeed: int = 10, defaultAcceleration: int = 10, defaultDeceleration: int = 10,
                  errorMonitorThreadSleepTime: float = 0.5):
+                 defaultSpeed: int = 10, defaultAcceleration: int = 10, defaultDeceleration: int = 10,
+                 errorMonitorThreadSleepTime: float = 0.5):
         """
         Robot 類別的建構函數
         - 如果提供 modbusTCPClient，則使用該連接
@@ -69,6 +82,7 @@ class Robot:
         - 可以在初始化的時候指定預設速度、加減速度(defaultSpeed,defaultAcceleration,defaultDeceleration)
         - 可以指定motionBlock(是否需要block)、motionBlockTime(block的時候要等多久)
         - 可以指定吸盤的數位輸出位置(suctionDigitalOutputNumber)
+        - 可以指定錯誤處理函式(errorCallback)，當錯誤時會呼叫errorCallback
         - 可以指定錯誤處理函式(errorCallback)，當錯誤時會呼叫errorCallback
         """
         
@@ -98,6 +112,12 @@ class Robot:
         self.errorMonitorThreadSleepTime = errorMonitorThreadSleepTime
         self._stopThread = threading.Event()
         
+        
+        self.errorMonitorThread = threading.Thread(target=self.__monitorErrors)
+        self.errorMonitorThread.daemon = True  # 設置為守護執行緒
+        self.errorMonitorThreadSleepTime = errorMonitorThreadSleepTime
+        self._stopThread = threading.Event()
+        
 
     def __del__(self):
         """
@@ -105,6 +125,7 @@ class Robot:
         """
         if self.modbusTCPClient:
             self.modbusTCPClient.close()
+        self.stopMonitorErrors
         self.stopMonitorErrors
 
     ########################################################################
@@ -668,5 +689,7 @@ class Robot:
         if request.isError():
             raise RequestErrorException(f"與modbus連接對象{self.modbusTCPClient.comm_params.host}:{self.modbusTCPClient.comm_params.port}無法通訊")
         return request.registers if count > 1 else request.registers[0]
+
+    
 
     
