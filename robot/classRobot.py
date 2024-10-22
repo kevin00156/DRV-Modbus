@@ -601,7 +601,7 @@ class Robot:
         while not self._stopThread.is_set():
             if self.isRobotError:
                 self._stopThread.set()
-                #raise RobotErrorException (f"機器人發生錯誤，錯誤內容: {self.getRobotNotReadyReason()}")
+                raise RobotErrorException (f"機器人發生錯誤，錯誤內容: {self.getRobotNotReadyReason()}")
             time.sleep(self.errorMonitorThreadSleepTime)
     
     def startMonitorErrors(self):
