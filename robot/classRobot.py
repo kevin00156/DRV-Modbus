@@ -1,12 +1,12 @@
 
 import time
 import threading
-from typing import Union, Tuple, Optional, Sequence, Callable
+from typing import Union, Tuple, Optional
 
 
 import time
 import threading
-from typing import Union, Tuple, Optional, Sequence, Callable
+from typing import Union, Tuple, Optional
 
 from pymodbus.payload import BinaryPayloadBuilder, BinaryPayloadDecoder
 from pymodbus.constants import Endian
@@ -104,12 +104,6 @@ class Robot:
         self.speed = defaultSpeed
         self.acceleration = defaultAcceleration
         self.deceleration = defaultDeceleration
-        
-        self.errorMonitorThread = threading.Thread(target=self.__monitorErrors)
-        self.errorMonitorThread.daemon = True  # 設置為守護執行緒
-        self.errorMonitorThreadSleepTime = errorMonitorThreadSleepTime
-        self._stopThread = threading.Event()
-        
         
         self.errorMonitorThread = threading.Thread(target=self.__monitorErrors)
         self.errorMonitorThread.daemon = True  # 設置為守護執行緒
@@ -530,7 +524,7 @@ class Robot:
         controllerError:int = self.readRegisters(0x01FF)
         robotGroupError:int = self.readRegisters(0x01E0)
         jointsError:list[int] = self.readRegisters(0x0140,16)
-        print(jointsError)
+        #print(jointsError)
         jointsError = jointsError[-4:]+jointsError[:2]
         
         return controllerError,robotGroupError,jointsError

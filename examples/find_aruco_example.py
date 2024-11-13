@@ -7,6 +7,7 @@ from landmark import util
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from realsense import realsense
 
 '''
 這是一個使用 RealSense 相機偵測 ArUco 標記的範例程式。
@@ -16,16 +17,10 @@ import matplotlib.pyplot as plt
 
 aruco_5x5_100_id_24 = aruco.Aruco(aruco.ARUCO_DICT().DICT_5X5_100, 2, 300)#這行請根據需要改用對應的aruco標記集
 
-cap = cv2.VideoCapture(1)#請根據需要更改相機號碼，參照find_cameras.py
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # 設定相機解析度寬度為 1280
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # 設定相機解析度高度為 720
 aruco_length = 0.053  # ArUco 標記的實際邊長（單位：米）
 
 # 相機內參矩陣 K，定義相機的焦距和光軸中心點等信息
-K=np.array(
-    [[739.0986938476562,0.0,660.466777227186],
-    [0.0,737.6295166015625,371.63861588193686],
-    [0.0,0.0,1.0]])#相機內部參數，不用動
+K=realsense.Get_Color_K()
 
 D=np.array([0.0,0.0,0.0,0.0,0.0,])#畸變函數，全部打0當作不畸變
 
@@ -38,10 +33,9 @@ ax = fig.add_subplot(projection='3d')
 
 while True:
     # 每次迴圈時清空 3D 圖
-    plt.cla()
     
     # 從相機中讀取一幀影像
-    ret, frame = cap.read()
+    frame = realsense.Get_RGB_Frame()
     
     # 使用 ArUco 偵測函數，來檢測影像中的 ArUco 標記
     # 返回值包括是否檢測成功 (ret)，相機到 ArUco 的轉換矩陣，ArUco 到相機的轉換矩陣，標記 ID 和角點坐標
