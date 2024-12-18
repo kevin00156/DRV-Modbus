@@ -68,20 +68,36 @@ class Robot:
     - 使用前請確保已正確連接到機器人。
     - 操作時請注意安全，避免碰撞。
     """
-    def __init__(self, modbusTCPClient: Optional[ModbusTcpClient] = None, host: Optional[str] = None, port: Optional[int] = None,
-                 motionBlock: bool = False, motionBlockTime: float = 0.1, suctionDigitalOutputNumber: int = 0b0000000000000000,
-                 defaultSpeed: int = 10, defaultAcceleration: int = 10, defaultDeceleration: int = 10,
-                 errorMonitorThreadSleepTime: float = 0.5):
+    def __init__(self,
+                 modbusTCPClient: Optional[ModbusTcpClient] = None,
+                 host: Optional[str] = None, port: Optional[int] = None,
+                 motionBlock: bool = False,
+                 motionBlockTime: float = 0.1,
+                 suctionDigitalOutputNumber: int = 0b0000000000000000,
+                 defaultSpeed: int = 10,
+                 defaultAcceleration: int = 10,
+                 defaultDeceleration: int = 10,
+                 errorMonitorThreadSleepTime: float = 0.5,
+                 closeToTargetThreshold: float = 0.01
+                 ):
         """
         Robot 類別的建構函數
-        - 如果提供 modbusTCPClient，則使用該連接
-        - 如果提供 host，則會自動建立連接
-        - 如果兩者都未提供，則不會自動連接
-        - 可以在初始化的時候指定預設速度、加減速度(defaultSpeed,defaultAcceleration,defaultDeceleration)
-        - 可以指定motionBlock(是否需要block)、motionBlockTime(block的時候要等多久)
-        - 可以指定吸盤的數位輸出位置(suctionDigitalOutputNumber)
-        - 可以指定錯誤處理函式(errorCallback)，當錯誤時會呼叫errorCallback
-        - 可以指定錯誤處理函式(errorCallback)，當錯誤時會呼叫errorCallback
+        
+        args:
+        modbusTCPClient: ModbusTcpClient，如果提供，則使用該連接
+        host: str，如果提供，則會自動建立連接
+        port: int，如果提供，則會自動建立連接
+        host與port需要同時提供才會自動建立連接，反之會錯誤
+        
+        motionBlock: bool，是否需要block動作
+        motionBlockTime: float，block的時候要等多久
+        suctionDigitalOutputNumber: int，吸盤的數位輸出位置
+        defaultSpeed: int，預設速度
+        defaultAcceleration: int，預設加速度
+        defaultDeceleration: int，預設減速度
+        errorMonitorThreadSleepTime: float，錯誤監控執行緒的睡眠時間
+        closeToTargetThreshold: float，到達目標位置的閥值
+        
         """
         
         #檢查input是否合法
@@ -109,7 +125,7 @@ class Robot:
         self.errorMonitorThread.daemon = True  # 設置為守護執行緒
         self.errorMonitorThreadSleepTime = errorMonitorThreadSleepTime
         self._stopThread = threading.Event()
-        
+        self.closeToTargetThreshold = closeToTargetThreshold
 
     def __del__(self):
         """
@@ -363,16 +379,34 @@ class Robot:
         """
         等待機械手臂運動完成
         """
-        while not self.isRobotReachTargetPosition:
-            time.sleep(self.__blockTime)
         while True:#檢查何時結束
             if self.isRobotReachTargetPosition :
-                if self.latestMotionCommand is not None and (
-                    self.getTCPPose() == self.latestMotionCommand):#若有提供座標 則檢查座標是否到達
+                if self.latestMotionCommand is None :#若沒有提供座標 則只看isRobotReachTargetPosition是否到達
                     return
-                elif self.latestMotionCommand is None :#若沒有提供座標 則只看isRobotReachTargetPosition是否到達
+                if self.isCloseToTarget():#若提供座標 則檢查座標是否到達，到達才return
                     return
+            time.sleep(self.__blockTime)
 
+    def isCloseToTarget(self) -> bool:
+        """
+        檢查機械手臂是否接近目標位置
+        :param threshold: 閥值，預設為0.01
+        :return: 如果機械手臂到達目標位置，則返回True，否則返回False
+        """
+        if self.closeToTargetThreshold is None:
+            self.closeToTargetThreshold = 0.01
+        # 獲取機械手臂的當前位置
+        current_pose = self.getTCPPose()
+        # 獲取最新的運動命令
+        latest_pose = self.__latestMotionCommand
+        # 如果最新的運動命令為None，則返回False
+        if latest_pose is None:
+            return False
+        # 計算兩個位置之間的歐幾里得距離
+        import numpy as np
+        distance = np.linalg.norm(np.array(current_pose) - np.array(latest_pose))
+        # 如果距離小於閥值，則返回True，否則返回False
+        return distance < self.closeToTargetThreshold
 
     def sendMotionCommand(
         self, 
