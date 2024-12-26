@@ -104,7 +104,8 @@ Get-Content vscode-extensions.txt | ForEach-Object { code --install-extension $_
 `python examples/warp_suction_example.py`    
 
 這個功能比較複雜，是檢測aruco位置後，還要命令機械手臂移動並控制吸盤的程式  
-目前仍在研究中  
+注意：此程式的機器人控制使用的是被棄用的request.py, send.py，後續開發請改用classRobot.py  
+注意：在發送命令時請盡可能採用Robot_Go_MovL，而不是Robot_Go_MovP，避免機器人的運動速度過慢。
 
 如果吸盤並不裝在DO_0，請嘗試更改發送的命令為你的DO
 
@@ -122,6 +123,15 @@ def Suction_ON(c):
 #Suction_OFF同理，或可以新增自己的函式，或可以寫為int(0b0000010000000000)
 備註：舊版有關request.py, send.py已經棄用，請改用robot類別來處理
 ```
+
+--
+已知問題
+在發送運動命令(Robot.sendMotionCommand)時，若使用Robot_Go_MovP作為eRobotCommand傳入，則機器人會以較慢的速度運動，請盡可能使用Robot_Go_MovL取代Robot_Go_MovP  
+
+--
+
+
+
 貢獻
 --
 
