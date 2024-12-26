@@ -442,11 +442,11 @@ class Robot:
             return
 
         if speed is not None:
-            speed = self.speed
+            self.speed = speed
         if acceleration is not None:
-            acceleration = self.acceleration
+            self.acceleration = acceleration
         if deceleration is not None:
-            deceleration = self.deceleration
+            self.deceleration = deceleration
         #指定不需要提供座標的命令
         positionlessCommand = ( eRobotCommand.Robot_All_Joints_Homing_To_Origin,
                                 eRobotCommand.Motion_Stop,
