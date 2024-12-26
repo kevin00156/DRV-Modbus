@@ -124,12 +124,9 @@ def Suction_ON(c):
 備註：舊版有關request.py, send.py已經棄用，請改用robot類別來處理
 ```
 
---
-已知問題
+已知問題  
+--  
 在發送運動命令(Robot.sendMotionCommand)時，若使用Robot_Go_MovP作為eRobotCommand傳入，則機器人會以較慢的速度運動，請盡可能使用Robot_Go_MovL取代Robot_Go_MovP  
-
---
-
 
 
 貢獻
